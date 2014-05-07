@@ -10,6 +10,8 @@ app.use(bodyParser());
   /path/to/dir/
   list contents of directory
   
+  *optional*
+  ?recursive = list recursively default false
   return:
   [
     {
@@ -22,30 +24,36 @@ app.use(bodyParser());
 app.get("/*/", 
   function (req, res, next) { 
     var dirPath =  decodeURI(url.parse(req.url).pathname);
-    fileDriver.list(dirPath,
-      function (err, files) {
-        if (err) {
-          // this this is a file, redirect to file path
-          if (err.code === 'ENOTDIR') {
-            var originalUrl = url.parse(req.originalUrl);
-            originalUrl.pathname = originalUrl.pathname.substr(0, originalUrl.pathname.length - 1);
-            var target = url.format(originalUrl);
-            res.statusCode = 303;
-            res.setHeader('Location', target);
-            res.end('Redirecting to ' + target);
-            return;
-          }
+    var isRecursive = req.query.recursive || "false";
+    var handList = function (err, files) {
+      if (err) {
+        // this this is a file, redirect to file path
+        if (err.code === 'ENOTDIR') {
+          var originalUrl = url.parse(req.originalUrl);
+          originalUrl.pathname = originalUrl.pathname.substr(0, originalUrl.pathname.length - 1);
+          var target = url.format(originalUrl);
+          res.statusCode = 303;
+          res.setHeader('Location', target);
+          res.end('Redirecting to ' + target);
+          return;
+        }
         return next(err);
       }
       res.json(files);
-    });
+    };
+    if (isRecursive === "true") {
+      return fileDriver.listAll(dirPath, false, handList);
+    } else {
+      return fileDriver.list(dirPath, handList);
+    }
 });
 
 /* GET
   /path/to/file
   return contents of file
   if dir, redirect to dir path
-
+  
+  *optional*
   ?encoding = default utf8
 
   return:
