@@ -1,6 +1,9 @@
 var Lab = require('lab');
 var fs = require('fs');
-var server = require('../fileserver.js');
+var express = require('express');
+var server = express();
+var restfs = require('../fileserver.js');
+restfs(server);
 var supertest = require('supertest');
 var baseDir = __dirname+"/dir_test";
 var async = require('async');
