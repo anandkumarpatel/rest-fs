@@ -287,7 +287,7 @@ Lab.experiment('basic delete tests', function () {
   Lab.test('try to delete folder', function (done) {
     rmFile(baseFolder, function(err){
       if(err) {
-        if(err.code === 'EPERM') {
+        if(err.code === 'EPERM' || err.code === 'EISDIR') {
           return done();
         }
         return done(err);
