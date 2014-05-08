@@ -65,11 +65,13 @@ POST /path/to/file/or/dir
   body.encoding = default utf8
 
   returns: modified resource
+  ```
   {
     "name" : "file1", // name of dir or file
     "path" : "/path/to/file", // path to dir or file 
     "dir" : false // true if directory
   }
+  ```
 
 PUT /path/to/file
 -----------------  
@@ -80,11 +82,13 @@ PUT /path/to/file
   body.encoding = default utf8
 
   returns: modified resource
+  ```
   {
     "name" : "file1", // name of dir or file
     "path" : "/path/to/file", // path to dir or file 
     "dir" : false // true if directory
   }
+  ```
 
 DEL /path/to/dir/
 -----------------  
