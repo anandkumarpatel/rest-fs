@@ -28,7 +28,7 @@ GET /path/to/dir/
   ?recursive = list recursively default false
 
   returns:
-```
+  ```
   [
     {
       "name" : "file1", // name of dir or file
@@ -37,7 +37,7 @@ GET /path/to/dir/
     },
     ...
   ]
-```
+  ```
 
 GET /path/to/file
 -----------------
@@ -48,7 +48,7 @@ GET /path/to/file
   ?encoding = default utf8
 
   returns:
-  content of specified file as Content-Type "text/html"
+  content of specified file
 
 
 POST /path/to/file/or/dir
@@ -64,7 +64,12 @@ POST /path/to/file/or/dir
   body.mode = permissions of file (defaults: file 438(0666) dir 511(0777))<br>
   body.encoding = default utf8
 
-  returns: nothing
+  returns: modified resource
+  {
+    "name" : "file1", // name of dir or file
+    "path" : "/path/to/file", // path to dir or file 
+    "dir" : false // true if directory
+  }
 
 PUT /path/to/file
 -----------------  
@@ -74,18 +79,29 @@ PUT /path/to/file
   body.mode = permissions of file (438 default 0666 octal)<br>
   body.encoding = default utf8
 
-  returns: nothing
+  returns: modified resource
+  {
+    "name" : "file1", // name of dir or file
+    "path" : "/path/to/file", // path to dir or file 
+    "dir" : false // true if directory
+  }
 
 DEL /path/to/dir/
 -----------------  
   deletes folder<br>
   if file returns error
 
-  returns: nothing
+  returns: 
+  ```
+  {}
+  ```
 
 DEL /path/to/file
 -----------------  
   deletes file<br>
   if folder returns error
 
-  returns: nothing
+  returns: 
+  ```
+  {}
+  ```

@@ -4,6 +4,8 @@ var bodyParser = require('body-parser');
 var app = express();
 var fileDriver = require('./fsDriver.js');
 var url = require('url');
+var mime = require('mime');
+
 app.use(bodyParser());
 
 /* GET
@@ -12,6 +14,7 @@ app.use(bodyParser());
   
   *optional*
   ?recursive = list recursively default false
+  
   return:
   [
     {
@@ -57,7 +60,7 @@ app.get("/*/",
   ?encoding = default utf8
 
   return:
-  content of specified file as Content-Type "text/html"
+  content of specified file
 */
 app.get("/*", 
   function (req, res, next) { 
@@ -81,6 +84,7 @@ app.get("/*",
       if (typeof data !== 'string') {
         data = "";
       }
+      res.set('Content-Type', mime.lookup(filePath));
       res.send(200, data);
     });
 });
@@ -98,7 +102,12 @@ app.get("/*",
   body.mode = permissons of file (defaults: file 438(0666) dir 511(0777))
   body.encoding = default utf8
 
-  return: nothing
+  returns: modified resource
+  {
+    "name" : "file1", // name of dir or file
+    "path" : "/path/to/file", // path to dir or file 
+    "dir" : false // true if directory
+  }
 */
 app.post("/*", 
   function (req, res, next) { 
@@ -109,29 +118,38 @@ app.post("/*",
     if (req.body.newPath) {
       options.clobber = req.body.clobber || false;
       options.mkdirp = req.body.mkdirp || false;
-      fileDriver.move(dirPath, req.body.newPath, options, send200(req, res, next));
+      fileDriver.move(dirPath, req.body.newPath, options, 
+        send200(req, res, next, formatOutData(dirPath, isDir)));
       return;
     }
 
     if (isDir) {
       var mode = req.body.mode || 511;
-      fileDriver.mkdir(dirPath, mode, send200(req, res, next));
+      fileDriver.mkdir(dirPath, mode, 
+        send200(req, res, next, formatOutData(dirPath, isDir)));
     } else {
       options.encoding = req.body.encoding  || 'utf8';
       options.mode = req.body.mode  || 438;
       var data = req.body.content || '';
-      fileDriver.writeFile(dirPath, data, options, send200(req, res, next));
+      fileDriver.writeFile(dirPath, data, options, 
+        send200(req, res, next, formatOutData(dirPath, isDir)));
     }
 });
 
 /* PUT
-  /path/to/file
-  make file
+  /path/to/file/or/dir
+  make file or dir
+
   *optional*
   body.mode = permissons of file (438 default 0666 octal)
   body.encoding = default utf8
 
-  return: nothing
+  returns: modified resource
+  {
+    "name" : "file1", // name of dir or file
+    "path" : "/path/to/file", // path to dir or file 
+    "dir" : false // true if directory
+  }
 */
 app.put("/*", 
   function (req, res, next) { 
@@ -141,12 +159,14 @@ app.put("/*",
 
     if (isDir) {
       var mode = req.body.mode || 511;
-      fileDriver.mkdir(dirPath, mode, send200(req, res, next));
+      fileDriver.mkdir(dirPath, mode, 
+        send200(req, res, next, formatOutData(dirPath, true)));
     } else {
       options.encoding = req.body.encoding  || 'utf8';
       options.mode = req.body.mode  || 438;
       var data = req.body.content || '';
-      fileDriver.writeFile(dirPath, data, options, send200(req, res, next));
+      fileDriver.writeFile(dirPath, data, options, 
+        send200(req, res, next, formatOutData(dirPath, false)));
     }
 });
 
@@ -154,33 +174,47 @@ app.put("/*",
   /path/to/dir/
   deletes file
 
-  return: nothing
+  return: 
+  {}
 */
 app.del("/*/", 
   function (req, res, next) { 
     var dirPath =  decodeURI(url.parse(req.url).pathname);
-    fileDriver.rmdir(dirPath, send200(req, res, next));
+    fileDriver.rmdir(dirPath, send200(req, res, next, formatOutData()));
 });
 
 /* DEL
   /path/to/file
   deletes file
 
-  return: nothing
+  return: 
+  {}
 */
 app.del("/*", 
   function (req, res, next) { 
     var dirPath =  decodeURI(url.parse(req.url).pathname);
-    fileDriver.unlink(dirPath, send200(req, res, next));
+    fileDriver.unlink(dirPath, send200(req, res, next, formatOutData()));
 });
 
 // Helpers
-var send200 = function(req, res, next) {
+var formatOutData = function (filepath, isDir) {
+  if (!filepath) return {};
+  var parts = filepath.split("/");
+  var filename = parts[parts.length - 1];
+  var path = filepath.substr(0, filepath.length - filename.length);
+  return {
+      "name" : filename,
+      "path" : path, 
+      "dir" : isDir
+    };
+};
+
+var send200 = function(req, res, next, out) {
   return function (err) {
     if (err) {
       return next(err);
     }
-    res.send(200);
+    res.json(200, out);
   };
 };
 
