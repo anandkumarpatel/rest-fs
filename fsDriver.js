@@ -66,8 +66,7 @@ var list = function(reqDir, cb) {
     var formatFileList = function(index) {
       return function (err, stat) {
         if (err) {
-          cb(err);
-          return;
+          return cb(err);
         }
         filesList.push({
           name: files[index],
@@ -101,13 +100,6 @@ var mkdir = function(dirPath, mode, cb)  {
 };
 
 /*
-  rename
-*/
-var rename = function(oldPath, newPath, cb)  {
-  fs.rename(oldPath, newPath, cb);
-};
-
-/*
   delete directory
 */
 var rmdir = function(dirPath, cb)  {
@@ -134,30 +126,44 @@ var unlink = function(filename, cb)  {
 var move = function (oldPath, newPath, opts, cb) {
   // have to remove trailing slaches
   if(oldPath.substr(-1) == '/') {
-        oldPath = oldPath.substr(0, oldPath.length - 1);
+    oldPath = oldPath.substr(0, oldPath.length - 1);
   }
   if(newPath.substr(-1) == '/') {
-        newPath = newPath.substr(0, newPath.length - 1);
+    newPath = newPath.substr(0, newPath.length - 1);
   }
 
-  // also work around bug for clobber in dir
-  if (opts.clobber) {
-    rm(newPath, function(err) {
-      if (err) {
+
+  // workaround for ncp for dirs. should error if we trying to mv into own dir
+  fs.stat(oldPath, function(err, stats) {
+    if(err) {
+      return cb(err);
+    }
+    if (stats.isDirectory() &&
+      ~newPath.indexOf(oldPath) &&
+      newPath.split("/").length > oldPath.split("/").length) {
+        err = new Error('cannot move inside itself');
+        err.code = 'EPERM';
         return cb(err);
-      }
+    }
+
+    // also work around bug for clobber in dir
+    if (opts.clobber) {
+      rm(newPath, function(err) {
+        if (err) {
+          return cb(err);
+        }
+        return mv(oldPath, newPath, opts, cb);
+      });
+    } else {
       return mv(oldPath, newPath, opts, cb);
-    });
-  } else {
-    return mv(oldPath, newPath, opts, cb);
-  }
+    }
+  });
 };
 
 module.exports.listAll = listAll;
 module.exports.list = list;
 module.exports.readFile = readFile;
 module.exports.mkdir = mkdir;
-module.exports.rename = rename;
 module.exports.rmdir = rmdir;
 module.exports.writeFile = writeFile;
 module.exports.unlink = unlink;

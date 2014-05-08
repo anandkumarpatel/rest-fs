@@ -21,12 +21,39 @@ function cleanBase(cb) {
   });
 }
 
-function createFile(filepath, text, cb) {
-  var req = supertest(server).post(filepath);
-  if (text) {
-    req = req.send({ 
-      content: text
+function createFile(filepath, opts, cb) {
+  if(typeof opts === 'function') {
+    cb = opts;
+    opts = null;
+  }
+  var req = supertest(server).put(filepath);
+  if (opts) {
+    req.send(opts);
+  } 
+  req.end(function(err, res){
+    if (err) {
+      return cb(err);
+    }
+    fs.stat(filepath, function (err, stats) {
+      if (err) {
+        return cb(err);
+      } else if (stats.isFile()) {
+        return cb();
+      } else {
+        return cb(new Error('file did not get created'));
+      }
     });
+  });
+}
+
+function createFilePost(filepath, opts, cb) {
+  if(typeof opts === 'function') {
+    cb = opts;
+    opts = null;
+  }
+  var req = supertest(server).post(filepath);
+  if (opts) {
+    req.send(opts);
   } 
   req.end(function(err, res){
     if (err) {
@@ -97,20 +124,50 @@ Lab.experiment('basic create tests', function () {
     cleanBase(done);
   });
 
-  Lab.test('create empty file', function (done) {
+  Lab.test('create empty file PUT', function (done) {
     var filepath = baseFolder+'/test_file.txt';
-    createFile(filepath, null, done);
+    createFile(filepath, done);
   });
 
-  Lab.test('create file with spaces in filename', function (done) {
+  Lab.test('create empty file POST', function (done) {
+    var filepath = baseFolder+'/test_file.txt';
+    createFilePost(filepath, done);
+  });
+
+  Lab.test('create empty file POST w/ encoding', function (done) {
+    var filepath = baseFolder+'/test_file.txt';
+    createFilePost(filepath, {encoding: "utf8"}, done);
+  });
+
+  Lab.test('create empty file POST w/ mode', function (done) {
+    var filepath = baseFolder+'/test_file.txt';
+    createFilePost(filepath, {mode: 777}, done);
+  });
+
+  Lab.test('create empty file POST w/ content', function (done) {
+    var filepath = baseFolder+'/test_file.txt';
+    createFilePost(filepath, {content: "testText"}, done);
+  });
+
+  Lab.test('create empty file PUT w/ encoding', function (done) {
+    var filepath = baseFolder+'/test_file.txt';
+    createFile(filepath, {encoding: "utf8"}, done);
+  });
+
+  Lab.test('create empty file PUT w/ mode', function (done) {
+    var filepath = baseFolder+'/test_file.txt';
+    createFile(filepath, {mode: 777}, done);
+  });
+
+  Lab.test('create file with spaces in filename PUT', function (done) {
     var filepath = baseFolder+'/test file.txt';
-    createFile(filepath, null, done);
+    createFile(filepath, done);
   });
 
-  Lab.test('create file with text', function (done) {
+  Lab.test('create file with text PUT', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     var testText = "test";
-    createFile(filepath, testText, function(err) {
+    createFile(filepath, {content: testText}, function(err) {
       fs.readFile(filepath, {
         encoding: 'utf8'
       }, function (err, data) {
@@ -125,10 +182,10 @@ Lab.experiment('basic create tests', function () {
     });
   });
 
-  Lab.test('create file with text and spaces in file name', function (done) {
+  Lab.test('create file with text and spaces in file name PUT', function (done) {
     var filepath = baseFolder+'/test file.txt';
     var testText = "test";
-    createFile(filepath, testText, function(err) {
+    createFile(filepath, {content: testText}, function(err) {
       fs.readFile(filepath, {
         encoding: 'utf8'
       }, function (err, data) {
@@ -143,9 +200,9 @@ Lab.experiment('basic create tests', function () {
     });
   });
 
-  Lab.test('create file in path that does not exist', function (done) {
+  Lab.test('create file in path that does not exist PUT', function (done) {
     var filepath = baseFolder+'/fake/test_file.txt';
-    createFile(filepath, null,
+    createFile(filepath,
       function (err, data) {
         if (err) {
           if (err.code === 'ENOENT') {
@@ -156,12 +213,12 @@ Lab.experiment('basic create tests', function () {
       });
   });
 
-  Lab.test('overwrite file', function (done) {
+  Lab.test('overwrite file PUT', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     var testText = "test";
     var testText2 = "wonder";
-    createFile(filepath, testText, function(err) {
-      createFile(filepath, testText2, function(err) {
+    createFile(filepath, {content: testText}, function(err) {
+      createFile(filepath, {content: testText2}, function(err) {
         fs.readFile(filepath, {
           encoding: 'utf8'
         }, function (err, data) {
@@ -207,7 +264,7 @@ Lab.experiment('basic delete tests', function () {
 
   Lab.test('delete file', function (done) {
     var filepath = baseFolder+'/test_file.txt';
-    createFile(filepath, null, function(err) {
+    createFile(filepath, function(err) {
       if (err) {
         return done(err);
       }
@@ -251,10 +308,10 @@ Lab.experiment('read tests', function () {
         cleanBase(cb);
       },
       function(cb) {
-        createFile(file1path, null, cb);
+        createFile(file1path, cb);
       },
       function(cb) {
-        createFile(file2path, fileContent, cb);
+        createFile(file2path, {content: fileContent}, cb);
       }
     ], done);
   });
@@ -266,6 +323,21 @@ Lab.experiment('read tests', function () {
   Lab.test('read file', function (done) {
     supertest(server)
       .get(file2path)
+      .expect(200)
+      .end(function(err, res){
+        if (err) {
+          return done(err);
+        } else if (!~fileContent.indexOf(res.text)) {
+          return done(new Error('file read wrong data'));
+        }
+        return done();
+      });
+  });
+
+  Lab.test('read file utf8', function (done) {
+    supertest(server)
+      .get(file2path)
+      .query({encoding: 'utf8'})
       .expect(200)
       .end(function(err, res){
         if (err) {
@@ -350,10 +422,10 @@ Lab.experiment('move tests', function () {
         createDir(dir2path, cb);
       },
       function(cb) {
-        createFile(file1path, null, cb);
+        createFile(file1path, cb);
       },
       function(cb) {
-        createFile(file2path, fileContent, cb);
+        createFile(file2path, {content: fileContent}, cb);
       }
     ], done);
   });

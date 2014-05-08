@@ -44,44 +44,54 @@ function cleanBase(cb) {
   });
 }
 
-function createDir(dirpath, cb) {
-  supertest(server)
-    .post(dirpath)
-    .expect(200)
-    .end(function(err, res){
+function createDir(dirpath, opts, cb) {
+ if(typeof opts === 'function') {
+  cb = opts;
+  opts = null;
+ }
+  var req = supertest(server).put(dirpath);
+  if (opts) {
+    req.send(opts);
+  }  
+  req.expect(200).end(function(err, res){
+    if (err) {
+      return cb(err);
+    }
+    fs.stat(dirpath, function (err, stats) {
       if (err) {
         return cb(err);
+      } else if (!stats.isDirectory()) {
+        return cb(new Error('dir did not get created'));
+      } else {
+        return cb();
       }
-      fs.stat(dirpath, function (err, stats) {
-        if (err) {
-          return cb(err);
-        } else if (!stats.isDirectory()) {
-          return cb(new Error('dir did not get created'));
-        } else {
-          return cb();
-        }
-      });
     });
+  });
 }
 
-function createDirPut(dirpath, cb) {
-  supertest(server)
-    .put(dirpath)
-    .expect(200)
-    .end(function(err, res){
+function createDirPost(dirpath, opts, cb) {
+ if(typeof opts === 'function') {
+  cb = opts;
+  opts = null;
+ }
+  var req = supertest(server).post(dirpath);
+  if (opts) {
+    req.send(opts);
+  }  
+  req.expect(200).end(function(err, res){
+    if (err) {
+      return cb(err);
+    }
+    fs.stat(dirpath, function (err, stats) {
       if (err) {
         return cb(err);
+      } else if (!stats.isDirectory()) {
+        return cb(new Error('dir did not get created'));
+      } else {
+        return cb();
       }
-      fs.stat(dirpath, function (err, stats) {
-        if (err) {
-          return cb(err);
-        } else if (!stats.isDirectory()) {
-          return cb(new Error('dir did not get created'));
-        } else {
-          return cb();
-        }
-      });
     });
+  });
 }
 function createFile(filepath, text, cb) {
   var data = text || '';
@@ -175,11 +185,19 @@ Lab.experiment('create tests', function () {
   });
   Lab.test('create dir POST', function (done) {
     var dirpath = baseDir+'/dir2/';
-    createDir(dirpath, done);
+    createDirPost(dirpath, done);
+  });
+  Lab.test('create dir POST with mode 400', function (done) {
+    var dirpath = baseDir+'/dir2/';
+    createDirPost(dirpath, {mode: 400}, done);
   });
   Lab.test('create dir PUT', function (done) {
     var dirpath = baseDir+'/dir2/';
-    createDirPut(dirpath, done);
+    createDir(dirpath, done);
+  });
+  Lab.test('create dir PUT with mode 400', function (done) {
+    var dirpath = baseDir+'/dir2/';
+    createDir(dirpath, {mode: 400}, done);
   });
 });
 
@@ -274,10 +292,10 @@ Lab.experiment('read tests', function () {
         cleanBase(cb);
       },
       function(cb) {
-        createDir(testdir, cb);
+        createDir(testdir, {mode: 0}, cb);
       },
       function(cb) {
-        createDir(emptydir, cb);
+        createDir(emptydir, {mode: 0}, cb);
       },
       function(cb) {
         createFile(file1Path, fileContent, cb);
@@ -296,6 +314,35 @@ Lab.experiment('read tests', function () {
         if (err) {
           return done(err);
         } else if (!~file2Path.indexOf(res.body[0].path+res.body[0].name)) {
+          return done(new Error('file list incorrect'));
+        }
+        return done();
+      });
+  });
+
+  Lab.test('get filled dir ls', function (done) {
+    supertest(server)
+      .get(baseDir+'/')
+      .expect(200)
+      .end(function(err, res){
+        if (err) {
+          return done(err);
+        } else if (res.body.length != 3) {
+          return done(new Error('file list incorrect'));
+        }
+        return done();
+      });
+  });
+
+  Lab.test('get dir ls recursive', function (done) {
+    supertest(server)
+      .get(baseDir+'/')
+      .query({recursive: "true"})
+      .expect(200)
+      .end(function(err, res){
+        if (err) {
+          return done(err);
+        } else if (res.body.length != 5) {
           return done(new Error('file list incorrect'));
         }
         return done();
@@ -408,6 +455,20 @@ Lab.experiment('move tests', function () {
   Lab.test('move empty dir in same dir (rename) without trailing slash', function (done) {
     moveDir(dir2, baseDir+'/new', false, false, done);
   });
+  Lab.test('move empty dir to itself', function (done) {
+    moveDir(dir2, dir2, false, false, function(err) {
+      if(err) {
+        if (err.code === 'EEXIST') {
+          return done();
+        }
+        return done(err);
+      }
+      return done(new Error('dir was moved on top of itself'));
+    });
+  });
+  Lab.test('move empty dir to same dir with similar name', function (done) {
+    moveDir(dir2, dir2.substr(0, dir2.length - 1)+"add", false, false, done);
+  });
   Lab.test('move empty dir into a dir with trailing slash', function (done) {
     moveDir(dir2, dir1+'new/', false, false, done);
   });
@@ -417,7 +478,7 @@ Lab.experiment('move tests', function () {
   Lab.test('move empty dir into itself', function (done) {
     moveDir(dir2, dir2+'new/', false, false, function(err) {
       if(err) {
-        if (err.code === 'ENOENT') {
+        if (err.code === 'EPERM') {
           return done();
         }
         return done(err);
@@ -482,13 +543,36 @@ Lab.experiment('move tests', function () {
   Lab.test('move dir into a dir without trailing slash', function (done) {
     moveDir(dir1, dir2+'new', false, false, done);
   });
-
-  // this times out i guess due to error
-  /*
+  Lab.test('move dir to itself', function (done) {
+    moveDir(dir1, dir1, false, false, function(err) {
+      if(err) {
+        if (err.code === 'EEXIST') {
+          return done();
+        }
+        return done(err);
+      }
+      return done(new Error('dir was moved on top of itself'));
+    });
+  });
+  Lab.test('move dir to same dir with similar name', function (done) {
+    moveDir(dir1, dir1.substr(0, dir2.length - 1)+"add", false, false, done);
+  });
+  Lab.test('move dir to itself', function (done) {
+    moveDir(dir1, dir1, false, false, function(err) {
+      if(err) {
+        if (err.code === 'EEXIST') {
+          return done();
+        }
+        return done(err);
+      }
+      return done(new Error('dir was moved on top of itself'));
+    });
+  });
+  
   Lab.test('move dir into itself', function (done) {
     moveDir(dir1, dir1+'new/', false, false, function(err) {
       if(err) {
-        if (err.code === 'ENOENT') {
+        if (err.code === 'EPERM') {
           return done();
         }
         return done(err);
@@ -496,7 +580,7 @@ Lab.experiment('move tests', function () {
       return done(new Error('dir was moved into itself'));
     });
   });
-  */
+  
   Lab.test('move dir out of dir', function (done) {
     moveDir(dir1, dir2+'new/', false, false, function(err) {
       if (err) return done(err);

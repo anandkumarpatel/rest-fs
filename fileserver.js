@@ -6,7 +6,7 @@ var mime = require('mime');
 
 var fileserver = function(app) {
   if (!app) {
-    return new Error('express app required');
+    throw new Error('express app required');
   }
 
   app.use(bodyParser());
@@ -41,6 +41,7 @@ var fileserver = function(app) {
 var getDir = function (req, res, next) { 
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isRecursive = req.query.recursive || "false";
+
   var handList = function (err, files) {
     if (err) {
       // this this is a file, redirect to file path
@@ -57,6 +58,7 @@ var getDir = function (req, res, next) {
     }
     res.json(files);
   };
+
   if (isRecursive === "true") {
     return fileDriver.listAll(dirPath, false, handList);
   } else {
@@ -93,9 +95,7 @@ var getFile = function (req, res, next) {
       next(err);
       return;
     }
-    if (typeof data !== 'string') {
-      data = "";
-    }
+
     res.set('Content-Type', mime.lookup(filePath));
     res.send(200, data);
   });
@@ -146,9 +146,6 @@ var postFileOrDir = function (req, res, next) {
       send200(req, res, next, formatOutData(dirPath, isDir)));
   }
 };
-
-
-
 
 /* PUT
   /path/to/file/or/dir
