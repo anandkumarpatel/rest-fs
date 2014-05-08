@@ -5,16 +5,29 @@ restful interface to a filesystem
 
 usage
 =====
+`npm install rest-fs`
+
+to install
 
 `npm start`
+
 starts fileserver on port 3000
 
 `npm test`
+
 runs various file and folder test
 
-`app = require('rest-fs')`
-app is a express application which has all the file system routes defined
-the app is not in the listening state
+`npm start`
+
+starts server on port 3000 of your entire system
+
+```
+app = require('express')();
+restfs = require('rest-fs')
+restfs(app);
+app.listen(3000)
+```
+To use programmatically, pass in the app into restfs and it will add the routes.
 
 API
 ===
