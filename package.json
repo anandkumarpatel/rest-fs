@@ -29,7 +29,8 @@
     "body-parser": "^1.0.2",
     "findit": "^1.2.0",
     "mv": "^2.0.0",
-    "rimraf": "^2.2.8"
+    "rimraf": "^2.2.8",
+    "mime": "^1.2.11"
   },
   "devDependencies": {
     "supertest": "^0.12.0",
