@@ -143,7 +143,7 @@ function moveDir(oldpath, newPath, doClobber, doMkdirp, cb) {
           function(next) {
             // new dir structure should match old structure
             getDirContents(newPath, function(err, newPaths) {
-              if(err) return cb(err);
+              if(err) return next(err);
               if(newPaths.compare(oldPaths)) {
                 return next();
               } else {
@@ -161,15 +161,18 @@ function getDirContents(dirPath, cb) {
   if (dirPath.substr(-1) === '/') {
     dirPath = dirPath.substr(0, dirPath.length - 1);
   }
+  var error = null;
   var paths = [];
   var emitter = walk(dirPath, function(path,stat){
     paths.push(path.substr(dirPath.length));
   });
   emitter.on('end', function() {
-    return cb(null, paths);
+    return cb(error, paths);
   });
   emitter.on('error', function(err) {
-    return cb(err);
+    error = new Error("error on file: "+err);
+    error.code = 'EINVAL';
+    emitter.end();
   });
 }
 
@@ -514,6 +517,32 @@ Lab.experiment('move tests', function () {
     moveDir(dir2, dir1+'fake/dir/', false, false, function(err) {
       if(err) {
         if (err.code === 'ENOENT') {
+          return done();
+        }
+        return done(err);
+      }
+      return done(new Error('dir was created without mkdirp'));
+    });
+  });
+
+   Lab.test('move non existing dir into existing dir', function (done) {
+    moveDir(dir2+'fake/dir/', dir1, false, false, function(err) {
+      if(err) {
+        if (err.code === 'EINVAL') {
+          console.log(err);
+          return done();
+        }
+        return done(err);
+      }
+      return done(new Error('dir was created without mkdirp'));
+    });
+  });
+
+  Lab.test('move non existing dir into non existing dir', function (done) {
+    moveDir(dir2+'fake/dir/', dir1+'fake/dir/', false, false, function(err) {
+      if(err) {
+        if (err.code === 'EINVAL') {
+          console.log(err);
           return done();
         }
         return done(err);
