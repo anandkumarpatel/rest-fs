@@ -25,20 +25,20 @@ var fileserver = function(app) {
 /* GET
   /path/to/dir/
   list contents of directory
-  
+
   *optional*
   ?recursive = list recursively default false
-  
+
   return:
   [
     {
       "name" : "file1", // name of dir or file
-      "path" : "/path/to/file", // path to dir or file 
+      "path" : "/path/to/file", // path to dir or file
       "dir" : false // true if directory
     },
   ]
 */
-var getDir = function (req, res, next) { 
+var getDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isRecursive = req.query.recursive || "false";
 
@@ -70,14 +70,14 @@ var getDir = function (req, res, next) {
   /path/to/file
   return contents of file
   if dir, redirect to dir path
-  
+
   *optional*
   ?encoding = default utf8
 
   return:
   content of specified file
 */
-var getFile = function (req, res, next) { 
+var getFile = function (req, res, next) {
   var filePath = decodeURI(url.parse(req.url).pathname);
   var encoding = req.query.encoding || 'utf8';
   fileDriver.readFile(filePath, encoding, function(err, data) {
@@ -117,11 +117,11 @@ var getFile = function (req, res, next) {
   returns: modified resource
   {
     "name" : "file1", // name of dir or file
-    "path" : "/path/to/file", // path to dir or file 
+    "path" : "/path/to/file", // path to dir or file
     "dir" : false // true if directory
   }
 */
-var postFileOrDir = function (req, res, next) { 
+var postFileOrDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isDir = dirPath.substr(-1) == '/';
   var options = {};
@@ -129,21 +129,21 @@ var postFileOrDir = function (req, res, next) {
   if (req.body.newPath) {
     options.clobber = req.body.clobber || false;
     options.mkdirp = req.body.mkdirp || false;
-    fileDriver.move(dirPath, req.body.newPath, options, 
-      send200(req, res, next, formatOutData(dirPath, isDir)));
+    fileDriver.move(dirPath, req.body.newPath, options,
+      sendCode(200, req, res, next, formatOutData(dirPath, isDir)));
     return;
   }
 
   if (isDir) {
     var mode = req.body.mode || 511;
-    fileDriver.mkdir(dirPath, mode, 
-      send200(req, res, next, formatOutData(dirPath, isDir)));
+    fileDriver.mkdir(dirPath, mode,
+      sendCode(201, req, res, next, formatOutData(dirPath, isDir)));
   } else {
     options.encoding = req.body.encoding  || 'utf8';
     options.mode = req.body.mode  || 438;
     var data = req.body.content || '';
-    fileDriver.writeFile(dirPath, data, options, 
-      send200(req, res, next, formatOutData(dirPath, isDir)));
+    fileDriver.writeFile(dirPath, data, options,
+      sendCode(201, req, res, next, formatOutData(dirPath, isDir)));
   }
 };
 
@@ -158,25 +158,25 @@ var postFileOrDir = function (req, res, next) {
   returns: modified resource
   {
     "name" : "file1", // name of dir or file
-    "path" : "/path/to/file", // path to dir or file 
+    "path" : "/path/to/file", // path to dir or file
     "dir" : false // true if directory
   }
 */
-var putFileOrDir = function (req, res, next) { 
+var putFileOrDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isDir = dirPath.substr(-1) == '/';
   var options = {};
 
   if (isDir) {
     var mode = req.body.mode || 511;
-    fileDriver.mkdir(dirPath, mode, 
-      send200(req, res, next, formatOutData(dirPath, true)));
+    fileDriver.mkdir(dirPath, mode,
+      sendCode(201, req, res, next, formatOutData(dirPath, true)));
   } else {
     options.encoding = req.body.encoding  || 'utf8';
     options.mode = req.body.mode  || 438;
     var data = req.body.content || '';
-    fileDriver.writeFile(dirPath, data, options, 
-      send200(req, res, next, formatOutData(dirPath, false)));
+    fileDriver.writeFile(dirPath, data, options,
+      sendCode(201, req, res, next, formatOutData(dirPath, false)));
   }
 };
 
@@ -184,24 +184,24 @@ var putFileOrDir = function (req, res, next) {
   /path/to/dir/
   deletes file
 
-  return: 
+  return:
   {}
 */
-var delDir = function (req, res, next) { 
+var delDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  fileDriver.rmdir(dirPath, send200(req, res, next, formatOutData()));
+  fileDriver.rmdir(dirPath, sendCode(200, req, res, next, formatOutData()));
 };
 
 /* DEL
   /path/to/file
   deletes file
 
-  return: 
+  return:
   {}
 */
-var delFile = function (req, res, next) { 
+var delFile = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  fileDriver.unlink(dirPath, send200(req, res, next, formatOutData()));
+  fileDriver.unlink(dirPath, sendCode(200, req, res, next, formatOutData()));
 };
 
 // Helpers
@@ -212,17 +212,17 @@ var formatOutData = function (filepath, isDir) {
   var path = filepath.substr(0, filepath.length - filename.length);
   return {
       "name" : filename,
-      "path" : path, 
+      "path" : path,
       "dir" : isDir
     };
 };
 
-var send200 = function(req, res, next, out) {
+var sendCode = function(code, req, res, next, out) {
   return function (err) {
     if (err) {
       return next(err);
     }
-    res.json(200, out);
+    res.json(code, out);
   };
 };
 

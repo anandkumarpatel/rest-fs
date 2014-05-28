@@ -52,8 +52,8 @@ function createDir(dirpath, opts, cb) {
   var req = supertest(server).put(dirpath);
   if (opts) {
     req.send(opts);
-  }  
-  req.expect(200).end(function(err, res){
+  }
+  req.expect(201).end(function(err, res){
     if (err) {
       return cb(err);
     }
@@ -77,8 +77,8 @@ function createDirPost(dirpath, opts, cb) {
   var req = supertest(server).post(dirpath);
   if (opts) {
     req.send(opts);
-  }  
-  req.expect(200).end(function(err, res){
+  }
+  req.expect(201).end(function(err, res){
     if (err) {
       return cb(err);
     }
@@ -508,7 +508,7 @@ Lab.experiment('move tests', function () {
       return done(new Error('dir was overritting without clobber'));
     });
   });
-  
+
   Lab.test('move empty dir onto existing dir with clobber', function (done) {
     moveDir(dir2, dir1, true, false, done);
   });
@@ -597,7 +597,7 @@ Lab.experiment('move tests', function () {
       return done(new Error('dir was moved on top of itself'));
     });
   });
-  
+
   Lab.test('move dir into itself', function (done) {
     moveDir(dir1, dir1+'new/', false, false, function(err) {
       if(err) {
@@ -609,7 +609,7 @@ Lab.experiment('move tests', function () {
       return done(new Error('dir was moved into itself'));
     });
   });
-  
+
   Lab.test('move dir out of dir', function (done) {
     moveDir(dir1, dir2+'new/', false, false, function(err) {
       if (err) return done(err);
@@ -628,7 +628,7 @@ Lab.experiment('move tests', function () {
       return done(new Error('dir was overritting without clobber'));
     });
   });
-  
+
   Lab.test('move dir onto existing dir with clobber', function (done) {
     moveDir(dir1, dir2, true, false, done);
   });
