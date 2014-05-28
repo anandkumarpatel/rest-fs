@@ -88,7 +88,7 @@ var list = function(reqDir, cb) {
 /*
   read file from filepath
 */
-var readFile = function(filePath, encoding, cb) { 
+var readFile = function(filePath, encoding, cb) {
   fs.readFile(filePath, encoding, cb);
 };
 
@@ -102,8 +102,11 @@ var mkdir = function(dirPath, mode, cb)  {
 /*
   delete directory
 */
-var rmdir = function(dirPath, cb)  {
-  fs.rmdir(dirPath, cb);
+var rmdir = function(dirPath, clobber, cb)  {
+  if (clobber) {
+    return rm(dirPath, cb);
+  }
+  return fs.rmdir(dirPath, cb);
 };
 
 /*

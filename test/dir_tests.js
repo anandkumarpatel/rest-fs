@@ -205,7 +205,7 @@ Lab.experiment('create tests', function () {
 });
 
 
-Lab.experiment('basic delete tests', function () {
+Lab.experiment('delete tests', function () {
   Lab.beforeEach(function (done) {
     cleanBase(done);
   });
@@ -252,7 +252,7 @@ Lab.experiment('basic delete tests', function () {
             }
             return done(err);
           } else {
-            return done(new Error('dir did not get deleted'));
+            return done(new Error('remove returned unexpected error'));
           }
         });
       });
@@ -277,6 +277,115 @@ Lab.experiment('basic delete tests', function () {
     });
   });
 
+  Lab.test('attempt to a folder with files and folders in it without clobber', function (done) {
+    var dir1 =  baseDir+'/dir1/';
+    var file1 = dir1+'/file1';
+    var file2 = dir1+'/file2';
+    var dir1_dir1 =  dir1+'/dir1/';
+    var dir1_file1 = dir1_dir1+'/file1';
+    var dir1_file2 = dir1_dir1+'/file2';
+    var fileContent = "testing one two three and I am stopping now";
+    async.series([
+      function(cb) {
+        cleanBase(cb);
+      },
+      function(cb) {
+        createDir(dir1, cb);
+      },
+      function(cb) {
+        createDir(dir1_dir1, cb);
+      },
+      function(cb) {
+        createFile(file1, fileContent, cb);
+      },
+      function(cb) {
+        createFile(file2, fileContent, cb);
+      },
+      function(cb) {
+        createFile(dir1_file1, fileContent, cb);
+      },
+      function(cb) {
+        createFile(dir1_file2, fileContent, cb);
+      }
+    ], function (err) {
+      if (err) {
+        return done(err);
+      }
+      supertest(server)
+        .del(dir1)
+        .expect(500)
+        .end(function(err, res){
+          if (err) {
+            return done(err);
+          }
+          if (res.body.code !== 'ENOTEMPTY') {
+            return done(new Error('should have returned ENOTEMPTY'));
+          }
+          fs.stat(dir1, function (err, stats) {
+            if (err) {
+              return done(new Error('dir got deleted'));
+            } else {
+              return done();
+            }
+          });
+        });
+    });
+  });
+
+  Lab.test('attempt to a folder with files and folders in it with clobber', function (done) {
+    var dir1 =  baseDir+'/dir1/';
+    var file1 = dir1+'/file1';
+    var file2 = dir1+'/file2';
+    var dir1_dir1 =  dir1+'/dir1/';
+    var dir1_file1 = dir1_dir1+'/file1';
+    var dir1_file2 = dir1_dir1+'/file2';
+    var fileContent = "testing one two three and I am stopping now";
+    async.series([
+      function(cb) {
+        cleanBase(cb);
+      },
+      function(cb) {
+        createDir(dir1, cb);
+      },
+      function(cb) {
+        createDir(dir1_dir1, cb);
+      },
+      function(cb) {
+        createFile(file1, fileContent, cb);
+      },
+      function(cb) {
+        createFile(file2, fileContent, cb);
+      },
+      function(cb) {
+        createFile(dir1_file1, fileContent, cb);
+      },
+      function(cb) {
+        createFile(dir1_file2, fileContent, cb);
+      }
+    ], function (err) {
+      if (err) {
+        return done(err);
+      }
+      supertest(server)
+        .del(dir1)
+        .send({clobber: true})
+        .expect(200)
+        .end(function(err, res){
+          if (err) {
+            return done(err);
+          }
+          fs.stat(dir1, function (err, stats) {
+            if (err) {
+              if (err.code === 'ENOENT') {
+                return done();
+              }
+              return done(err);
+            }
+            return done(new Error('dir did not get deleted'));
+          });
+        });
+      });
+    });
 });
 
 
@@ -295,10 +404,10 @@ Lab.experiment('read tests', function () {
         cleanBase(cb);
       },
       function(cb) {
-        createDir(testdir, {mode: 0}, cb);
+        createDir(testdir, cb);
       },
       function(cb) {
-        createDir(emptydir, {mode: 0}, cb);
+        createDir(emptydir, cb);
       },
       function(cb) {
         createFile(file1Path, fileContent, cb);
@@ -408,7 +517,6 @@ Lab.experiment('read tests', function () {
       });
   });
 });
-
 
 Lab.experiment('move tests', function () {
   var dir1 =  baseDir+'/dir1/';

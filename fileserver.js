@@ -182,14 +182,17 @@ var putFileOrDir = function (req, res, next) {
 
 /* DEL
   /path/to/dir/
-  deletes file
+  deletes dir
+  *optional*
+  body.clobber = will remove non-empty dir (defaut: false)
 
   return:
   {}
 */
 var delDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  fileDriver.rmdir(dirPath, sendCode(200, req, res, next, formatOutData()));
+  var clobber = req.body.clobber  || false;
+  fileDriver.rmdir(dirPath, clobber,  sendCode(200, req, res, next, formatOutData()));
 };
 
 /* DEL
