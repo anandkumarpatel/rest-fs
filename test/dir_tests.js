@@ -9,6 +9,8 @@ var baseDir = __dirname+"/dir_test";
 var async = require('async');
 var rimraf = require('rimraf');
 var walk = require('walkdir');
+var _ = require('lodash');
+
 // attach the .compare method to Array's prototype to call it on any array
 Array.prototype.compare = function (array) {
   if (!array)
@@ -177,9 +179,7 @@ function getDirContents(dirPath, cb) {
 }
 
 /*
-
-      START TEST
-
+  START TEST
 */
 
 Lab.experiment('create tests', function () {
@@ -390,12 +390,12 @@ Lab.experiment('delete tests', function () {
 
 
 Lab.experiment('read tests', function () {
-  var testdirR =  baseDir+'/dir2';
-  var testdir =  testdirR+'/';
-  var emptydirR = baseDir+'/dir1';
-  var emptydir =  emptydirR+'/';
-  var file1Path = baseDir+'/test_file1.txt';
-  var file2Path = testdir+'test_file2.txt';
+  var dir2R =  baseDir+'/dir2';
+  var dir2 =  dir2R+'/';
+  var dir1D = baseDir+'/dir1';
+  var dir1 =  dir1D+'/';
+  var file1 = baseDir+'/file1.txt';
+  var dir1_file1 = dir2+'file2.txt';
   var fileContent = "test";
 
   Lab.beforeEach(function (done) {
@@ -404,33 +404,52 @@ Lab.experiment('read tests', function () {
         cleanBase(cb);
       },
       function(cb) {
-        createDir(testdir, cb);
+        createDir(dir2, cb);
       },
       function(cb) {
-        createDir(emptydir, cb);
+        createDir(dir1, cb);
       },
       function(cb) {
-        createFile(file1Path, fileContent, cb);
+        createFile(file1, fileContent, cb);
       },
       function(cb) {
-        createFile(file2Path, fileContent, cb);
+        createFile(dir1_file1, fileContent, cb);
       }
     ], done);
   });
 
   Lab.test('get dir ls', function (done) {
     supertest(server)
-      .get(testdir)
+      .get(dir2)
       .expect(200)
       .end(function(err, res){
         if (err) {
           return done(err);
-        } else if (!~file2Path.indexOf(res.body[0].path+res.body[0].name)) {
+        } if (res.body.length !== 1 || (_.difference(res.body, [ dir1_file1 ])).length) {
           return done(new Error('file list incorrect'));
         }
         return done();
       });
   });
+
+  Lab.test('test setModifyOut', function (done) {
+    server.setModifyOut(function (file) {
+      return 'anand';
+    });
+    supertest(server)
+      .get(dir2)
+      .expect(200)
+      .end(function(err, res){
+        server.unsetModifyOut();
+        if (err) {
+          return done(err);
+        } if (res.body.length !== 1 || (_.difference(res.body, ['anand'])).length) {
+          return done(new Error('file list incorrect'));
+        }
+        return done();
+      });
+  });
+
 
   Lab.test('get filled dir ls', function (done) {
     supertest(server)
@@ -439,7 +458,7 @@ Lab.experiment('read tests', function () {
       .end(function(err, res){
         if (err) {
           return done(err);
-        } else if (res.body.length != 3) {
+        } else if (res.body.length !== 3 || (_.difference(res.body, [ dir1, dir2, file1 ])).length) {
           return done(new Error('file list incorrect'));
         }
         return done();
@@ -454,7 +473,7 @@ Lab.experiment('read tests', function () {
       .end(function(err, res){
         if (err) {
           return done(err);
-        } else if (res.body.length != 5) {
+        } else if (res.body.length != 5 || (_.difference(res.body, [ baseDir+'/', dir1, dir2, file1, dir1_file1 ])).length) {
           return done(new Error('file list incorrect'));
         }
         return done();
@@ -463,7 +482,7 @@ Lab.experiment('read tests', function () {
 
   Lab.test('get empty dir ls', function (done) {
     supertest(server)
-      .get(emptydir)
+      .get(dir1)
       .expect(200)
       .end(function(err, res){
         if (err) {
@@ -477,12 +496,12 @@ Lab.experiment('read tests', function () {
 
   Lab.test('get dir ls with redirect', function (done) {
     supertest(server)
-      .get(testdirR)
+      .get(dir2R)
       .expect(303)
       .end(function(err, res){
         if (err) {
           return done(err);
-        } else if (!~res.text.indexOf('Redirecting to '+testdir)) {
+        } else if (!~res.text.indexOf('Redirecting to '+dir2)) {
           return done(new Error('not redirecting'));
         }
         return done();
@@ -491,12 +510,12 @@ Lab.experiment('read tests', function () {
 
   Lab.test('get empty dir ls with redirect', function (done) {
     supertest(server)
-      .get(emptydirR)
+      .get(dir1D)
       .expect(303)
       .end(function(err, res){
         if (err) {
           return done(err);
-        } else if (!~res.text.indexOf('Redirecting to '+emptydir)) {
+        } else if (!~res.text.indexOf('Redirecting to '+dir1)) {
           return done(new Error('not redirecting'));
         }
         return done();
@@ -505,7 +524,7 @@ Lab.experiment('read tests', function () {
 
   Lab.test('get dir which does not exist', function (done) {
     supertest(server)
-      .get(emptydirR+"/fake")
+      .get(dir1D+"/fake")
       .expect(500)
       .end(function(err, res){
         if (err) {

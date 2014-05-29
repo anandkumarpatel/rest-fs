@@ -3,7 +3,11 @@ var bodyParser = require('body-parser');
 var fileDriver = require('./fsDriver.js');
 var url = require('url');
 var mime = require('mime');
-
+var path = require('path');
+/* used to modify format out output of data;
+   input of function is full filepath
+*/
+var modifyOut = null;
 var fileserver = function(app) {
   if (!app) {
     throw new Error('express app required');
@@ -19,6 +23,15 @@ var fileserver = function(app) {
   app.use(function (err, req, res, next)  {
     res.send(500, err);
   });
+  app.setModifyOut = function(func) {
+    if (typeof func !== 'function') {
+      throw new Error('should be function');
+    }
+    modifyOut = func;
+  };
+  app.unsetModifyOut = function(func) {
+    modifyOut = null;
+  };
   return app;
 };
 
@@ -55,6 +68,9 @@ var getDir = function (req, res, next) {
         return;
       }
       return next(err);
+    }
+    for (var i = files.length - 1; i >= 0; i--) {
+      files[i] = formatOutData(files[i]);
     }
     res.json(files);
   };
@@ -130,20 +146,20 @@ var postFileOrDir = function (req, res, next) {
     options.clobber = req.body.clobber || false;
     options.mkdirp = req.body.mkdirp || false;
     fileDriver.move(dirPath, req.body.newPath, options,
-      sendCode(200, req, res, next, formatOutData(dirPath, isDir)));
+      sendCode(200, req, res, next, formatOutData(dirPath)));
     return;
   }
 
   if (isDir) {
     var mode = req.body.mode || 511;
     fileDriver.mkdir(dirPath, mode,
-      sendCode(201, req, res, next, formatOutData(dirPath, isDir)));
+      sendCode(201, req, res, next, formatOutData(dirPath)));
   } else {
     options.encoding = req.body.encoding  || 'utf8';
     options.mode = req.body.mode  || 438;
     var data = req.body.content || '';
     fileDriver.writeFile(dirPath, data, options,
-      sendCode(201, req, res, next, formatOutData(dirPath, isDir)));
+      sendCode(201, req, res, next, formatOutData(dirPath)));
   }
 };
 
@@ -170,13 +186,13 @@ var putFileOrDir = function (req, res, next) {
   if (isDir) {
     var mode = req.body.mode || 511;
     fileDriver.mkdir(dirPath, mode,
-      sendCode(201, req, res, next, formatOutData(dirPath, true)));
+      sendCode(201, req, res, next, formatOutData(dirPath)));
   } else {
     options.encoding = req.body.encoding  || 'utf8';
     options.mode = req.body.mode  || 438;
     var data = req.body.content || '';
     fileDriver.writeFile(dirPath, data, options,
-      sendCode(201, req, res, next, formatOutData(dirPath, false)));
+      sendCode(201, req, res, next, formatOutData(dirPath)));
   }
 };
 
@@ -192,7 +208,7 @@ var putFileOrDir = function (req, res, next) {
 var delDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var clobber = req.body.clobber  || false;
-  fileDriver.rmdir(dirPath, clobber,  sendCode(200, req, res, next, formatOutData()));
+  fileDriver.rmdir(dirPath, clobber,  sendCode(200, req, res, next, formatOutData(dirPath)));
 };
 
 /* DEL
@@ -204,20 +220,18 @@ var delDir = function (req, res, next) {
 */
 var delFile = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  fileDriver.unlink(dirPath, sendCode(200, req, res, next, formatOutData()));
+  fileDriver.unlink(dirPath, sendCode(200, req, res, next, formatOutData(dirPath)));
 };
 
 // Helpers
-var formatOutData = function (filepath, isDir) {
-  if (!filepath) return {};
-  var parts = filepath.split("/");
-  var filename = parts[parts.length - 1];
-  var path = filepath.substr(0, filepath.length - filename.length);
-  return {
-      "name" : filename,
-      "path" : path,
-      "dir" : isDir
-    };
+
+// formats out data based on client spec.
+var formatOutData = function (filepath) {
+  var out = filepath;
+  if (modifyOut) {
+    out = modifyOut(out);
+  }
+  return out;
 };
 
 var sendCode = function(code, req, res, next, out) {
@@ -225,7 +239,7 @@ var sendCode = function(code, req, res, next, out) {
     if (err) {
       return next(err);
     }
-    res.json(code, out);
+    res.send(code, out);
   };
 };
 

@@ -6,35 +6,18 @@ var path = require('path');
 var mv = require('mv');
 var rm = require('rimraf');
 
+// returns array of files and dir. trailing slash determines type.
 var listAll = function(reqDir, onlyDir, cb) {
-/* returns array of files and dir in format :
-[
-  {
-    name: base,
-    path: path.dirname(file),
-    dir: false
-  },
-  ...
-]
-*/
   var finder = findit(reqDir);
   var files = [];
 
   finder.on('directory', function (dir, stat, stop) {
-    files.push({
-      name: path.basename(dir),
-      path: path.dirname(dir),
-      dir: true
-    });
+    files.push(path.join(dir, '/'));
   });
 
   if (!onlyDir) {
     finder.on('file', function (file, stat) {
-      files.push({
-        name: path.basename(file),
-        path: path.dirname(file),
-        dir: false
-      });
+      files.push(file);
     });
   }
 
@@ -43,17 +26,8 @@ var listAll = function(reqDir, onlyDir, cb) {
   });
 };
 
+// returns array of files and dir. trailing slash determines type.
 var list = function(reqDir, cb) {
-/* returns array of files and dir in format :
-[
-  {
-    name: base, // file or dir name
-    path: path.dirname(file), // path to file
-    dir: false
-  },
-  ...
-]
-*/
   var filesList = [];
   var cnt = 0;
   fs.readdir(reqDir, function (err, files) {
@@ -68,11 +42,8 @@ var list = function(reqDir, cb) {
         if (err) {
           return cb(err);
         }
-        filesList.push({
-          name: files[index],
-          path: reqDir,
-          isDir: stat.isDirectory()
-        });
+        var file = path.join(reqDir, files[index], stat.isDirectory() ? '/' : '');
+        filesList.push(file);
         cnt++;
         if (cnt === files.length) {
           return cb(null, filesList);
