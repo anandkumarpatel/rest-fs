@@ -264,7 +264,7 @@ Lab.experiment('delete tests', function () {
       if(err) return done(err);
       supertest(server)
         .del(filePath+'/')
-        .expect(404)
+        .expect(400)
         .end(done);
     });
   });

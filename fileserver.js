@@ -18,8 +18,8 @@ var fileserver = function(app) {
   app.get(/^\/.+[^\/]$/, getFile);
   app.post("/*", postFileOrDir);
   app.put("/*", putFileOrDir);
-  app.del("/*/", delDir);
-  app.del("/*", delFile);
+  app.del(/^\/.+\/$/, delDir);
+  app.del(/^\/.+[^\/]$/, delFile);
   app.use(function (err, req, res, next)  {
     res.send(500, err);
   });
@@ -219,7 +219,7 @@ var delDir = function (req, res, next) {
     } else if (err && err.code === 'EPERM') {
       sendCode(403, req, res, next, formatOutData(dirPath))(null);
     } else if (err && err.code === 'ENOTDIR') {
-      sendCode(404, req, res, next, formatOutData(dirPath))(null);
+      sendCode(400, req, res, next, formatOutData(dirPath))(null);
     } else {
       sendCode(200, req, res, next, formatOutData(dirPath))(err);
     }
@@ -241,7 +241,7 @@ var delFile = function (req, res, next) {
     } else if (err && err.code === 'EPERM') {
       sendCode(403, req, res, next, formatOutData(dirPath))(null);
     } else if (err && err.code === 'EISDIR') {
-      sendCode(404, req, res, next, formatOutData(dirPath))(null);
+      sendCode(400, req, res, next, formatOutData(dirPath))(null);
     } else {
       sendCode(200, req, res, next, formatOutData(dirPath))(err);
     }

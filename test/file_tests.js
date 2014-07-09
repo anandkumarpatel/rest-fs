@@ -29,7 +29,7 @@ function createFile(filepath, opts, cb) {
   var req = supertest(server).put(filepath);
   if (opts) {
     req.send(opts);
-  } 
+  }
   req.end(function(err, res){
     if (err) {
       return cb(err);
@@ -54,7 +54,7 @@ function createFilePost(filepath, opts, cb) {
   var req = supertest(server).post(filepath);
   if (opts) {
     req.send(opts);
-  } 
+  }
   req.end(function(err, res){
     if (err) {
       return cb(err);
@@ -280,7 +280,7 @@ Lab.experiment('basic delete tests', function () {
       }
       rmFile(filepath + '/', function (err, res) {
         if (err) { return done(err); }
-        Lab.expect(res.statusCode).to.equal(404);
+        Lab.expect(res.statusCode).to.equal(400);
         done();
       });
     });
@@ -325,7 +325,7 @@ Lab.experiment('read tests', function () {
       }
     ], done);
   });
-  
+
   Lab.after(function (done) {
     cleanBase(done);
   });
