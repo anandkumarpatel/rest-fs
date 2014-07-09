@@ -13,13 +13,16 @@ var fileserver = function(app) {
     throw new Error('express app required');
   }
 
-  app.use(bodyParser());
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({
+    extended: true
+  }));
   app.get(/^\/.+\/$/, getDir);
   app.get(/^\/.+[^\/]$/, getFile);
   app.post("/*", postFileOrDir);
   app.put("/*", putFileOrDir);
-  app.del(/^\/.+\/$/, delDir);
-  app.del(/^\/.+[^\/]$/, delFile);
+  app.delete(/^\/.+\/$/, delDir);
+  app.delete(/^\/.+[^\/]$/, delFile);
   app.use(function (err, req, res, next)  {
     res.send(500, err);
   });
