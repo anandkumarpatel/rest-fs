@@ -243,7 +243,7 @@ function rmFile(path, cb) {
           if (err) {
             return cb(err);
           } else if (200 !== res.statusCode) {
-            return cb(res.body);
+            return cb(err, res);
           }
           fs.stat(path, function (err, stats) {
             if (err) {
@@ -272,27 +272,37 @@ Lab.experiment('basic delete tests', function () {
     });
   });
 
-  Lab.test('delete file that does not exist', function (done) {
-    rmFile(baseFolder+'/fake.txt', function(err){
-      if(err) {
-        if(err.code === 'ENOENT') {
-          return done();
-        }
+  Lab.test('delete file with trailing slash', function (done) {
+    var filepath = baseFolder+'/test_file.txt';
+    createFile(filepath, function(err) {
+      if (err) {
         return done(err);
       }
-      return done(new Error('file should not exist'));
+      rmFile(filepath + '/', function (err, res) {
+        if (err) { return done(err); }
+        Lab.expect(res.statusCode).to.equal(404);
+        done();
+      });
+    });
+  });
+
+  Lab.test('delete file that does not exist', function (done) {
+    rmFile(baseFolder+'/fake.txt', function (err, res) {
+      if (err) {
+        return done(err);
+      }
+      Lab.expect(res.statusCode).to.equal(404);
+      return done();
     });
   });
 
   Lab.test('try to delete folder', function (done) {
-    rmFile(baseFolder, function(err){
-      if(err) {
-        if(err.code === 'EPERM' || err.code === 'EISDIR') {
-          return done();
-        }
+    rmFile(baseFolder, function (err, res) {
+      if (err) {
         return done(err);
       }
-      return done(new Error('folder should not be removed'));
+      Lab.expect(res.statusCode).to.equal(403);
+      return done();
     });
   });
 });
@@ -394,12 +404,10 @@ Lab.experiment('read tests', function () {
   Lab.test('read file that does not exist', function (done) {
     supertest(server)
       .get(file1path+'.fake.txt')
-      .expect(500)
+      .expect(404)
       .end(function(err, res){
         if (err) {
           return done(err);
-        } else if (res.body.code !== 'ENOENT') {
-          return done(new Error('file should not exist'));
         }
         return done();
       });

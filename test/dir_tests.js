@@ -237,10 +237,10 @@ Lab.experiment('delete tests', function () {
   });
 
   Lab.test('delete nonexiting dir', function (done) {
-    var dirpath = baseDir+'/dir2/fake';
+    var dirpath = baseDir+'/dir2/fake/';
     supertest(server)
       .del(dirpath)
-      .expect(500)
+      .expect(404)
       .end(function(err, res){
         if (err) {
           return done(err);
@@ -258,22 +258,14 @@ Lab.experiment('delete tests', function () {
       });
   });
 
-  Lab.test('attempt to delete file', function (done) {
+  Lab.test('attempt to delete file with trailing slash', function (done) {
     var filePath = baseDir+'/file';
     createFile(filePath, "test", function (err) {
       if(err) return done(err);
       supertest(server)
         .del(filePath+'/')
-        .expect(500)
-        .end(function(err, res){
-          if (err) {
-            return done(err);
-          } else if (res.body.code === 'ENOTDIR') {
-            return done();
-          } else {
-            return done(new Error('file was deleted'));
-          }
-        });
+        .expect(404)
+        .end(done);
     });
   });
 
@@ -524,16 +516,9 @@ Lab.experiment('read tests', function () {
 
   Lab.test('get dir which does not exist', function (done) {
     supertest(server)
-      .get(dir1D+"/fake")
-      .expect(500)
-      .end(function(err, res){
-        if (err) {
-          return done(err);
-        } else if (res.body.code !== 'ENOENT') {
-          return done(new Error('file should not exist'));
-        }
-        return done();
-      });
+      .get(dir1D+"/fake/")
+      .expect(404)
+      .end(done);
   });
 });
 
@@ -656,7 +641,6 @@ Lab.experiment('move tests', function () {
     moveDir(dir2+'fake/dir/', dir1, false, false, function(err) {
       if(err) {
         if (err.code === 'EINVAL') {
-          console.log(err);
           return done();
         }
         return done(err);
@@ -669,7 +653,6 @@ Lab.experiment('move tests', function () {
     moveDir(dir2+'fake/dir/', dir1+'fake/dir/', false, false, function(err) {
       if(err) {
         if (err.code === 'EINVAL') {
-          console.log(err);
           return done();
         }
         return done(err);

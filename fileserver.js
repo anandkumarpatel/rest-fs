@@ -14,8 +14,8 @@ var fileserver = function(app) {
   }
 
   app.use(bodyParser());
-  app.get("/*/", getDir);
-  app.get("/*", getFile);
+  app.get(/^\/.+\/$/, getDir);
+  app.get(/^\/.+[^\/]$/, getFile);
   app.post("/*", postFileOrDir);
   app.put("/*", putFileOrDir);
   app.del("/*/", delDir);
@@ -66,8 +66,11 @@ var getDir = function (req, res, next) {
         res.setHeader('Location', target);
         res.end('Redirecting to ' + target);
         return;
+      } else if (err.code === 'ENOENT') {
+        return res.send(404);
+      } else {
+        return next(err);
       }
-      return next(err);
     }
     for (var i = files.length - 1; i >= 0; i--) {
       files[i] = formatOutData(files[i]);
@@ -107,9 +110,11 @@ var getFile = function (req, res, next) {
         res.setHeader('Location', target);
         res.end('Redirecting to ' + target);
         return;
+      } else if (err.code === 'ENOENT') {
+        return res.send(404);
+      } else {
+        return next(err);
       }
-      next(err);
-      return;
     }
 
     res.set('Content-Type', mime.lookup(filePath));
@@ -208,7 +213,17 @@ var putFileOrDir = function (req, res, next) {
 var delDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var clobber = req.body.clobber  || false;
-  fileDriver.rmdir(dirPath, clobber,  sendCode(200, req, res, next, formatOutData(dirPath)));
+  fileDriver.rmdir(dirPath, clobber,  function (err) {
+    if (err && err.code === 'ENOENT') {
+      sendCode(404, req, res, next, formatOutData(dirPath))(null);
+    } else if (err && err.code === 'EPERM') {
+      sendCode(403, req, res, next, formatOutData(dirPath))(null);
+    } else if (err && err.code === 'ENOTDIR') {
+      sendCode(404, req, res, next, formatOutData(dirPath))(null);
+    } else {
+      sendCode(200, req, res, next, formatOutData(dirPath))(err);
+    }
+  });
 };
 
 /* DEL
@@ -220,7 +235,17 @@ var delDir = function (req, res, next) {
 */
 var delFile = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  fileDriver.unlink(dirPath, sendCode(200, req, res, next, formatOutData(dirPath)));
+  fileDriver.unlink(dirPath, function (err) {
+    if (err && err.code === 'ENOENT') {
+      sendCode(404, req, res, next, formatOutData(dirPath))(null);
+    } else if (err && err.code === 'EPERM') {
+      sendCode(403, req, res, next, formatOutData(dirPath))(null);
+    } else if (err && err.code === 'EISDIR') {
+      sendCode(404, req, res, next, formatOutData(dirPath))(null);
+    } else {
+      sendCode(200, req, res, next, formatOutData(dirPath))(err);
+    }
+  });
 };
 
 // Helpers
