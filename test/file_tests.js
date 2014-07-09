@@ -29,7 +29,7 @@ function createFile(filepath, opts, cb) {
   var req = supertest(server).put(filepath);
   if (opts) {
     req.send(opts);
-  } 
+  }
   req.end(function(err, res){
     if (err) {
       return cb(err);
@@ -54,7 +54,7 @@ function createFilePost(filepath, opts, cb) {
   var req = supertest(server).post(filepath);
   if (opts) {
     req.send(opts);
-  } 
+  }
   req.end(function(err, res){
     if (err) {
       return cb(err);
@@ -280,7 +280,7 @@ Lab.experiment('basic delete tests', function () {
       }
       rmFile(filepath + '/', function (err, res) {
         if (err) { return done(err); }
-        Lab.expect(res.statusCode).to.equal(404);
+        Lab.expect(res.statusCode).to.equal(400);
         done();
       });
     });
@@ -296,13 +296,15 @@ Lab.experiment('basic delete tests', function () {
     });
   });
 
-  Lab.test('try to delete folder', function (done) {
+  Lab.test('try to delete folder with file api', function (done) {
     rmFile(baseFolder, function (err, res) {
       if (err) {
         return done(err);
       }
-      Lab.expect(res.statusCode).to.equal(403);
-      return done();
+      if (res.statusCode === 400 || res.statusCode === 403){
+        return done();
+      }
+      return new Error('should not delete folder');
     });
   });
 });
@@ -325,7 +327,7 @@ Lab.experiment('read tests', function () {
       }
     ], done);
   });
-  
+
   Lab.after(function (done) {
     cleanBase(done);
   });
