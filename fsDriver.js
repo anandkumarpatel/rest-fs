@@ -109,23 +109,19 @@ var move = function (oldPath, newPath, opts, cb) {
 
   // workaround for ncp for dirs. should error if we trying to mv into own dir
   fs.stat(oldPath, function(err, stats) {
-    if(err) {
+    if (err) {
       return cb(err);
     }
-    if (stats.isDirectory() &&
+    else if (stats.isDirectory() &&
       ~newPath.indexOf(oldPath) &&
       newPath.split("/").length > oldPath.split("/").length) {
         err = new Error('cannot move inside itself');
         err.code = 'EPERM';
         return cb(err);
-    }
-
-    // also work around bug for clobber in dir
-    if (opts.clobber) {
+    } else if (opts.clobber) {
+      // also work around bug for clobber in dir
       rm(newPath, function(err) {
-        if (err) {
-          return cb(err);
-        }
+        if (err) { return cb(err); }
         return mv(oldPath, newPath, opts, cb);
       });
     } else {
