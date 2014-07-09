@@ -296,13 +296,15 @@ Lab.experiment('basic delete tests', function () {
     });
   });
 
-  Lab.test('try to delete folder', function (done) {
+  Lab.test('try to delete folder with file api', function (done) {
     rmFile(baseFolder, function (err, res) {
       if (err) {
         return done(err);
       }
-      Lab.expect(res.statusCode).to.be.within(403, 404);
-      return done();
+      if (res.statusCode === 400 || res.statusCode === 403){
+        return done();
+      }
+      return new Error('should not delete folder');
     });
   });
 });
