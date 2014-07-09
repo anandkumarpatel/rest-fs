@@ -304,7 +304,7 @@ Lab.experiment('basic delete tests', function () {
       if (res.statusCode === 400 || res.statusCode === 403){
         return done();
       }
-      return new Error('should not delete folder');
+      return done(new Error('should not delete folder'));
     });
   });
 });
