@@ -301,7 +301,7 @@ Lab.experiment('basic delete tests', function () {
       if (err) {
         return done(err);
       }
-      Lab.expect(res.statusCode).to.equal(403);
+      Lab.expect(res.statusCode).to.be.within(403, 404);
       return done();
     });
   });
