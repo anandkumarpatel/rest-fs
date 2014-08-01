@@ -28,6 +28,8 @@ restfs(app);
 app.listen(3000)
 ```
 To use programmatically, pass in the app into restfs and it will add the routes.
+you can attach a function to modifyOut to manipulate file output.
+the function has one argument which is the full filepath and should return path to return
 
 API
 ===
@@ -36,7 +38,7 @@ API
 GET /path/to/dir/
 -----------------
   list contents of directory
-  
+
   *optional*<br>
   ?recursive = list recursively default false
 
@@ -45,7 +47,7 @@ GET /path/to/dir/
   [
     {
       "name" : "file1", // name of dir or file
-      "path" : "/path/to/file", // path to dir or file 
+      "path" : "/path/to/file", // path to dir or file
       "dir" : false // true if directory
     },
     ...
@@ -56,7 +58,7 @@ GET /path/to/file
 -----------------
   returns contents of file<br>
   if dir, redirect to dir path
-  
+
   *optional*<br>
   ?encoding = default utf8
 
@@ -81,13 +83,13 @@ POST /path/to/file/or/dir
   ```
   {
     "name" : "file1", // name of dir or file
-    "path" : "/path/to/file", // path to dir or file 
+    "path" : "/path/to/file", // path to dir or file
     "dir" : false // true if directory
   }
   ```
 
 PUT /path/to/file
------------------  
+-----------------
   creates file
 
   *optional*<br>
@@ -98,27 +100,27 @@ PUT /path/to/file
   ```
   {
     "name" : "file1", // name of dir or file
-    "path" : "/path/to/file", // path to dir or file 
+    "path" : "/path/to/file", // path to dir or file
     "dir" : false // true if directory
   }
   ```
 
 DEL /path/to/dir/
------------------  
+-----------------
   deletes folder<br>
   if file returns error
 
-  returns: 
+  returns:
   ```
   {}
   ```
 
 DEL /path/to/file
------------------  
+-----------------
   deletes file<br>
   if folder returns error
 
-  returns: 
+  returns:
   ```
   {}
   ```

@@ -26,15 +26,6 @@ var fileserver = function(app) {
   app.use(function (err, req, res, next)  {
     res.send(500, err);
   });
-  app.setModifyOut = function(func) {
-    if (typeof func !== 'function') {
-      throw new Error('should be function');
-    }
-    modifyOut = func;
-  };
-  app.unsetModifyOut = function(func) {
-    modifyOut = null;
-  };
   return app;
 };
 
@@ -76,7 +67,7 @@ var getDir = function (req, res, next) {
       }
     }
     for (var i = files.length - 1; i >= 0; i--) {
-      files[i] = formatOutData(files[i]);
+      files[i] = formatOutData(req, files[i]);
     }
     res.json(files);
   };
@@ -154,20 +145,20 @@ var postFileOrDir = function (req, res, next) {
     options.clobber = req.body.clobber || false;
     options.mkdirp = req.body.mkdirp || false;
     fileDriver.move(dirPath, req.body.newPath, options,
-      sendCode(200, req, res, next, formatOutData(dirPath)));
+      sendCode(200, req, res, next, formatOutData(req, dirPath)));
     return;
   }
 
   if (isDir) {
     var mode = req.body.mode || 511;
     fileDriver.mkdir(dirPath, mode,
-      sendCode(201, req, res, next, formatOutData(dirPath)));
+      sendCode(201, req, res, next, formatOutData(req, dirPath)));
   } else {
     options.encoding = req.body.encoding  || 'utf8';
     options.mode = req.body.mode  || 438;
     var data = req.body.content || '';
     fileDriver.writeFile(dirPath, data, options,
-      sendCode(201, req, res, next, formatOutData(dirPath)));
+      sendCode(201, req, res, next, formatOutData(req, dirPath)));
   }
 };
 
@@ -194,13 +185,13 @@ var putFileOrDir = function (req, res, next) {
   if (isDir) {
     var mode = req.body.mode || 511;
     fileDriver.mkdir(dirPath, mode,
-      sendCode(201, req, res, next, formatOutData(dirPath)));
+      sendCode(201, req, res, next, formatOutData(req, dirPath)));
   } else {
     options.encoding = req.body.encoding  || 'utf8';
     options.mode = req.body.mode  || 438;
     var data = req.body.content || '';
     fileDriver.writeFile(dirPath, data, options,
-      sendCode(201, req, res, next, formatOutData(dirPath)));
+      sendCode(201, req, res, next, formatOutData(req, dirPath)));
   }
 };
 
@@ -218,13 +209,13 @@ var delDir = function (req, res, next) {
   var clobber = req.body.clobber  || false;
   fileDriver.rmdir(dirPath, clobber,  function (err) {
     if (err && err.code === 'ENOENT') {
-      sendCode(404, req, res, next, formatOutData(dirPath))(null);
+      sendCode(404, req, res, next, formatOutData(req, dirPath))(null);
     } else if (err && err.code === 'EPERM') {
-      sendCode(403, req, res, next, formatOutData(dirPath))(null);
+      sendCode(403, req, res, next, formatOutData(req, dirPath))(null);
     } else if (err && err.code === 'ENOTDIR') {
-      sendCode(400, req, res, next, formatOutData(dirPath))(null);
+      sendCode(400, req, res, next, formatOutData(req, dirPath))(null);
     } else {
-      sendCode(200, req, res, next, formatOutData(dirPath))(err);
+      sendCode(200, req, res, next, formatOutData(req, dirPath))(err);
     }
   });
 };
@@ -240,13 +231,13 @@ var delFile = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   fileDriver.unlink(dirPath, function (err) {
     if (err && err.code === 'ENOENT') {
-      sendCode(404, req, res, next, formatOutData(dirPath))(null);
+      sendCode(404, req, res, next, formatOutData(req, dirPath))(null);
     } else if (err && err.code === 'EPERM') {
-      sendCode(403, req, res, next, formatOutData(dirPath))(null);
+      sendCode(403, req, res, next, formatOutData(req, dirPath))(null);
     } else if (err && err.code === 'EISDIR') {
-      sendCode(400, req, res, next, formatOutData(dirPath))(null);
+      sendCode(400, req, res, next, formatOutData(req, dirPath))(null);
     } else {
-      sendCode(200, req, res, next, formatOutData(dirPath))(err);
+      sendCode(200, req, res, next, formatOutData(req, dirPath))(err);
     }
   });
 };
@@ -254,10 +245,10 @@ var delFile = function (req, res, next) {
 // Helpers
 
 // formats out data based on client spec.
-var formatOutData = function (filepath) {
+var formatOutData = function (req, filepath) {
   var out = filepath;
-  if (modifyOut) {
-    out = modifyOut(out);
+  if (typeof req.modifyOut === 'function') {
+    out = req.modifyOut(out);
   }
   return out;
 };

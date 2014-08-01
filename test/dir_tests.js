@@ -425,14 +425,19 @@ Lab.experiment('read tests', function () {
   });
 
   Lab.test('test setModifyOut', function (done) {
-    server.setModifyOut(function (file) {
-      return 'anand';
+    var server2 = express();
+    server2.use(function(req, res, next) {
+      req.modifyOut = function (file) {
+        return 'anand';
+      };
+      next();
     });
-    supertest(server)
+    var restfs = require('../fileserver.js');
+    restfs(server2);
+    supertest(server2)
       .get(dir2)
       .expect(200)
       .end(function(err, res){
-        server.unsetModifyOut();
         if (err) {
           return done(err);
         } if (res.body.length !== 1 || (_.difference(res.body, ['anand'])).length) {

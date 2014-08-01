@@ -15,11 +15,4 @@ Lab.experiment('create tests', function () {
       return (err);
     }
   });
-  Lab.test('test invalid setModifyOut', function (done) {
-    try {
-      server.setModifyOut("fake");
-    } catch (err) {
-      done();
-    }
-  });
 });
