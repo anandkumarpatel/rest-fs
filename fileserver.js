@@ -24,7 +24,7 @@ var fileserver = function(app) {
   app.delete(/^\/.+\/$/, delDir);
   app.delete(/^\/.+[^\/]$/, delFile);
   app.use(function (err, req, res, next)  {
-    res.send(500, err);
+    res.status(500).send(err);
   });
   return app;
 };
@@ -61,7 +61,7 @@ var getDir = function (req, res, next) {
         res.end('Redirecting to ' + target);
         return;
       } else if (err.code === 'ENOENT') {
-        return res.send(404);
+        return res.status(404).end();
       } else {
         return next(err);
       }
@@ -105,14 +105,14 @@ var getFile = function (req, res, next) {
         res.end('Redirecting to ' + target);
         return;
       } else if (err.code === 'ENOENT') {
-        return res.send(404);
+        return res.status(404).end();
       } else {
         return next(err);
       }
     }
 
     res.set('Content-Type', mime.lookup(filePath));
-    res.send(200, data);
+    res.status(200).send(data);
   });
 };
 
@@ -258,7 +258,7 @@ var sendCode = function(code, req, res, next, out) {
     if (err) {
       return next(err);
     }
-    res.send(code, out);
+    res.status(code).send(out);
   };
 };
 
