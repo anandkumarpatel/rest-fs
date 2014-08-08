@@ -305,7 +305,7 @@ Lab.experiment('delete tests', function () {
       }
       supertest(server)
         .del(dir1)
-        .expect(500)
+        .expect(409)
         .end(function(err, res){
           if (err) {
             return done(err);

@@ -145,7 +145,7 @@ var postFileOrDir = function (req, res, next) {
     options.clobber = req.body.clobber || false;
     options.mkdirp = req.body.mkdirp || false;
     fileDriver.move(dirPath, req.body.newPath, options,
-      sendCode(200, req, res, next, formatOutData(req, dirPath)));
+      sendCode(200, req, res, next, formatOutData(req, req.body.newPath)));
     return;
   }
 
@@ -207,17 +207,9 @@ var putFileOrDir = function (req, res, next) {
 var delDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var clobber = req.body.clobber  || false;
-  fileDriver.rmdir(dirPath, clobber,  function (err) {
-    if (err && err.code === 'ENOENT') {
-      sendCode(404, req, res, next, formatOutData(req, dirPath))(null);
-    } else if (err && err.code === 'EPERM') {
-      sendCode(403, req, res, next, formatOutData(req, dirPath))(null);
-    } else if (err && err.code === 'ENOTDIR') {
-      sendCode(400, req, res, next, formatOutData(req, dirPath))(null);
-    } else {
-      sendCode(200, req, res, next, formatOutData(req, dirPath))(err);
-    }
-  });
+  fileDriver.rmdir(dirPath, clobber,
+    sendCode(200, req, res, next, formatOutData(req, dirPath))
+  );
 };
 
 /* DEL
@@ -229,17 +221,9 @@ var delDir = function (req, res, next) {
 */
 var delFile = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  fileDriver.unlink(dirPath, function (err) {
-    if (err && err.code === 'ENOENT') {
-      sendCode(404, req, res, next, formatOutData(req, dirPath))(null);
-    } else if (err && err.code === 'EPERM') {
-      sendCode(403, req, res, next, formatOutData(req, dirPath))(null);
-    } else if (err && err.code === 'EISDIR') {
-      sendCode(400, req, res, next, formatOutData(req, dirPath))(null);
-    } else {
-      sendCode(200, req, res, next, formatOutData(req, dirPath))(err);
-    }
-  });
+  fileDriver.unlink(dirPath,
+    sendCode(200, req, res, next, formatOutData(req, dirPath))
+  );
 };
 
 // Helpers
@@ -256,8 +240,22 @@ var formatOutData = function (req, filepath) {
 var sendCode = function(code, req, res, next, out) {
   return function (err) {
     if (err) {
-      return next(err);
+      code = 500;
+      out = err;
+
+      if (err.code === 'ENOENT') {
+        code = 404;
+      } if (err.code === 'EPERM') {
+        code = 403;
+      } if (err.code === 'ENOTDIR' || err.code === 'EISDIR') {
+        code = 400;
+      } if (err.code === 'ENOTEMPTY' ||
+        err.code === 'EEXIST' ||
+        err.code === 'EINVAL') {
+        code = 409;
+      }
     }
+
     res.status(code).send(out);
   };
 };
