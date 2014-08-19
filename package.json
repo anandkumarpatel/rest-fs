@@ -1,6 +1,6 @@
 {
   "name": "rest-fs",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "restful fileserver",
   "main": "fileserver.js",
   "directories": {
