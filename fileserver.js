@@ -147,8 +147,8 @@ var getFile = function (req, res, next) {
 */
 var postFileOrDir = function (req, res, next) {
   var isJson = false;
-  if (req.headers['content-type'] === 'string') {
-    isJson = req.headers['content-type'].matches(/application\/json/);
+  if (typeof req.headers['content-type'] === 'string') {
+    isJson = ~req.headers['content-type'].indexOf('application/json') === -1 ? true : false;
   }
 
   var dirPath =  decodeURI(url.parse(req.url).pathname);
