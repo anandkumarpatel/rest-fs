@@ -1,4 +1,5 @@
 var Lab = require('lab');
+var lab = exports.lab = Lab.script();
 var fs = require('fs');
 var express = require('express');
 var server = express();
@@ -8,10 +9,12 @@ var supertest = require('supertest');
 var baseFolder = __dirname+"/file_test";
 var async = require('async');
 var rimraf = require('rimraf');
-Lab.before(function (done) {
+var request = require('request');
+
+lab.before(function (done) {
   cleanBase(done);
 });
-Lab.after(function (done) {
+lab.after(function (done) {
   rimraf(baseFolder, done);
 });
 
@@ -20,7 +23,7 @@ function cleanBase(cb) {
     fs.mkdir(baseFolder, cb);
   });
 }
-
+var testPort = 52232;
 function createFile(filepath, opts, cb) {
   if(typeof opts === 'function') {
     cb = opts;
@@ -119,52 +122,52 @@ function createDir(dirPath, cb) {
   fs.mkdir(dirPath, cb);
 }
 
-Lab.experiment('basic create tests', function () {
-  Lab.beforeEach(function (done) {
+lab.experiment('basic create tests', function () {
+  lab.beforeEach(function (done) {
     cleanBase(done);
   });
 
-  Lab.test('create empty file PUT', function (done) {
+  lab.test('create empty file PUT', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFile(filepath, done);
   });
 
-  Lab.test('create empty file POST', function (done) {
+  lab.test('create empty file POST', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFilePost(filepath, done);
   });
 
-  Lab.test('create empty file POST w/ encoding', function (done) {
+  lab.test('create empty file POST w/ encoding', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFilePost(filepath, {encoding: "utf8"}, done);
   });
 
-  Lab.test('create empty file POST w/ mode', function (done) {
+  lab.test('create empty file POST w/ mode', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFilePost(filepath, {mode: 777}, done);
   });
 
-  Lab.test('create empty file POST w/ content', function (done) {
+  lab.test('create empty file POST w/ content', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFilePost(filepath, {content: "testText"}, done);
   });
 
-  Lab.test('create empty file PUT w/ encoding', function (done) {
+  lab.test('create empty file PUT w/ encoding', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFile(filepath, {encoding: "utf8"}, done);
   });
 
-  Lab.test('create empty file PUT w/ mode', function (done) {
+  lab.test('create empty file PUT w/ mode', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFile(filepath, {mode: 777}, done);
   });
 
-  Lab.test('create file with spaces in filename PUT', function (done) {
+  lab.test('create file with spaces in filename PUT', function (done) {
     var filepath = baseFolder+'/test file.txt';
     createFile(filepath, done);
   });
 
-  Lab.test('create file with text PUT', function (done) {
+  lab.test('create file with text PUT', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     var testText = "test";
     createFile(filepath, {content: testText}, function(err) {
@@ -182,7 +185,7 @@ Lab.experiment('basic create tests', function () {
     });
   });
 
-  Lab.test('create file with text and spaces in file name PUT', function (done) {
+  lab.test('create file with text and spaces in file name PUT', function (done) {
     var filepath = baseFolder+'/test file.txt';
     var testText = "test";
     createFile(filepath, {content: testText}, function(err) {
@@ -200,7 +203,7 @@ Lab.experiment('basic create tests', function () {
     });
   });
 
-  Lab.test('create file in path that does not exist PUT', function (done) {
+  lab.test('create file in path that does not exist PUT', function (done) {
     var filepath = baseFolder+'/fake/test_file.txt';
     createFile(filepath,
       function (err, data) {
@@ -213,7 +216,7 @@ Lab.experiment('basic create tests', function () {
       });
   });
 
-  Lab.test('overwrite file PUT', function (done) {
+  lab.test('overwrite file PUT', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     var testText = "test";
     var testText2 = "wonder";
@@ -257,12 +260,12 @@ function rmFile(path, cb) {
           });
       });
 }
-Lab.experiment('basic delete tests', function () {
-  Lab.beforeEach(function (done) {
+lab.experiment('basic delete tests', function () {
+  lab.beforeEach(function (done) {
     cleanBase(done);
   });
 
-  Lab.test('delete file', function (done) {
+  lab.test('delete file', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFile(filepath, function(err) {
       if (err) {
@@ -272,7 +275,7 @@ Lab.experiment('basic delete tests', function () {
     });
   });
 
-  Lab.test('delete file with trailing slash', function (done) {
+  lab.test('delete file with trailing slash', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFile(filepath, function(err) {
       if (err) {
@@ -286,7 +289,7 @@ Lab.experiment('basic delete tests', function () {
     });
   });
 
-  Lab.test('delete file that does not exist', function (done) {
+  lab.test('delete file that does not exist', function (done) {
     rmFile(baseFolder+'/fake.txt', function (err, res) {
       if (err) {
         return done(err);
@@ -296,7 +299,7 @@ Lab.experiment('basic delete tests', function () {
     });
   });
 
-  Lab.test('try to delete folder with file api', function (done) {
+  lab.test('try to delete folder with file api', function (done) {
     rmFile(baseFolder, function (err, res) {
       if (err) {
         return done(err);
@@ -309,12 +312,12 @@ Lab.experiment('basic delete tests', function () {
   });
 });
 
-Lab.experiment('read tests', function () {
+lab.experiment('read tests', function () {
   var file1path = baseFolder+'/test_file1.txt';
   var file2path = baseFolder+'/test_file2.txt';
   var fileContent = "test";
 
-  Lab.before(function (done) {
+  lab.before(function (done) {
     async.series([
       function(cb) {
         cleanBase(cb);
@@ -328,11 +331,11 @@ Lab.experiment('read tests', function () {
     ], done);
   });
 
-  Lab.after(function (done) {
+  lab.after(function (done) {
     cleanBase(done);
   });
 
-  Lab.test('read file', function (done) {
+  lab.test('read file', function (done) {
     supertest(server)
       .get(file2path)
       .expect(200)
@@ -346,7 +349,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('read file utf8', function (done) {
+  lab.test('read file utf8', function (done) {
     supertest(server)
       .get(file2path)
       .query({encoding: 'utf8'})
@@ -361,7 +364,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('read empty file', function (done) {
+  lab.test('read empty file', function (done) {
     supertest(server)
       .get(file1path)
       .expect(200)
@@ -375,7 +378,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('read file with redirect', function (done) {
+  lab.test('read file with redirect', function (done) {
     supertest(server)
       .get(file2path+'/')
       .expect(303)
@@ -389,7 +392,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('read empty file with redirect', function (done) {
+  lab.test('read empty file with redirect', function (done) {
     supertest(server)
       .get(file1path+'/')
       .expect(303)
@@ -403,7 +406,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('read file that does not exist', function (done) {
+  lab.test('read file that does not exist', function (done) {
     supertest(server)
       .get(file1path+'.fake.txt')
       .expect(404)
@@ -416,14 +419,14 @@ Lab.experiment('read tests', function () {
   });
 });
 
-Lab.experiment('move tests', function () {
+lab.experiment('move tests', function () {
   var dir1path =  baseFolder+'/test_dir1/';
   var dir2path =  baseFolder+'/test_dir2/';
   var file1path = baseFolder+'/test_file1.txt';
   var file2path = baseFolder+'/test_file2.txt';
   var fileContent = "test";
 
-  Lab.before(function (done) {
+  lab.before(function (done) {
     async.series([
       function(cb) {
         createDir(dir1path, cb);
@@ -439,27 +442,27 @@ Lab.experiment('move tests', function () {
       }
     ], done);
   });
-  Lab.after(function (done) {
+  lab.after(function (done) {
     cleanBase(done);
   });
 
-  Lab.test('move file in same directory (rename)', function (done) {
+  lab.test('move file in same directory (rename)', function (done) {
     moveFile(file1path, file1path+'.test', false, false, done);
   });
 
-  Lab.test('move file into directory', function (done) {
+  lab.test('move file into directory', function (done) {
     moveFile(file1path+'.test', dir1path+'/test_file1.txt.test', false, false, done);
   });
 
-  Lab.test('move file into another directory', function (done) {
+  lab.test('move file into another directory', function (done) {
     moveFile(dir1path+'/test_file1.txt.test', dir2path+'/test_file1.txt.test', false, false, done);
   });
 
-  Lab.test('move file out of directory', function (done) {
+  lab.test('move file out of directory', function (done) {
     moveFile(dir2path+'/test_file1.txt.test', file1path, false, false, done);
   });
 
-  Lab.test('move file over existing file', function (done) {
+  lab.test('move file over existing file', function (done) {
     moveFile(file1path, file2path, false, false, function(err) {
       if(err) {
         if(err.code === 'EEXIST') {
@@ -471,11 +474,11 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move file over existing file with clobber', function (done) {
+  lab.test('move file over existing file with clobber', function (done) {
     moveFile(file1path, file2path, true, false, done);
   });
 
-  Lab.test('move file to nonexisting path', function (done) {
+  lab.test('move file to nonexisting path', function (done) {
     moveFile(file2path, baseFolder+'/fake/path.txt', false, false, function(err) {
       if(err) {
         if(err.code === 'ENOENT') {
@@ -487,7 +490,7 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move file to nonexisting path with clober', function (done) {
+  lab.test('move file to nonexisting path with clober', function (done) {
     moveFile(file2path, baseFolder+'/fake/path.txt', true, false, function(err) {
       if(err) {
         if(err.code === 'ENOENT') {
@@ -499,7 +502,56 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move file to nonexisting path with mkdirp', function (done) {
+  lab.test('move file to nonexisting path with mkdirp', function (done) {
     moveFile(file2path, baseFolder+'/new/test.txt', false, true, done);
+  });
+});
+
+lab.experiment('stream tests', function () {
+  lab.test('POST - stream file', function (done) {
+    var dataFile = baseFolder+'/data.txt';
+    var testText = 'lots of text';
+    var testFile = baseFolder+'/stream_test.txt';
+
+    fs.writeFileSync(dataFile, testText);
+    var app = server.listen(testPort,
+      function() {
+        fs.createReadStream(dataFile)
+        .pipe(request.post('http://localhost:'+testPort+testFile))
+        .on('end', function(err, res) {
+          app.close(function() {
+            if (err) {
+              return done(err);
+            }
+            var data = fs.readFileSync(testFile);
+            Lab.expect(data.toString()).to.equal(testText);
+            done();
+          });
+        });
+    });
+  });
+
+  lab.test('POST - stream existing file', function (done) {
+    var dataFile = baseFolder+'/data.txt';
+    var testText = 'lots of text';
+    var testFile = baseFolder+'/stream_test.txt';
+
+    fs.writeFileSync(dataFile, testText);
+    fs.writeFileSync(testFile, testText);
+    var app = server.listen(testPort,
+      function() {
+        fs.createReadStream(dataFile)
+        .pipe(request.post('http://localhost:'+testPort+testFile))
+        .on('end', function(err, res) {
+          app.close(function() {
+            if (err) {
+              return done(err);
+            }
+            var data = fs.readFileSync(testFile);
+            Lab.expect(data.toString()).to.equal(testText);
+            done();
+          });
+        });
+    });
   });
 });

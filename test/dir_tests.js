@@ -1,4 +1,5 @@
 var Lab = require('lab');
+var lab = exports.lab = Lab.script();
 var fs = require('fs');
 var express = require('express');
 var server = express();
@@ -33,10 +34,10 @@ Array.prototype.compare = function (array) {
   return true;
 };
 
-Lab.before(function (done) {
+lab.before(function (done) {
   cleanBase(done);
 });
-Lab.after(function (done) {
+lab.after(function (done) {
   rimraf(baseDir, done);
 });
 
@@ -182,34 +183,34 @@ function getDirContents(dirPath, cb) {
   START TEST
 */
 
-Lab.experiment('create tests', function () {
-  Lab.beforeEach(function (done) {
+lab.experiment('create tests', function () {
+  lab.beforeEach(function (done) {
     cleanBase(done);
   });
-  Lab.test('create dir POST', function (done) {
+  lab.test('create dir POST', function (done) {
     var dirpath = baseDir+'/dir2/';
     createDirPost(dirpath, done);
   });
-  Lab.test('create dir POST with mode 400', function (done) {
+  lab.test('create dir POST with mode 400', function (done) {
     var dirpath = baseDir+'/dir2/';
     createDirPost(dirpath, {mode: 400}, done);
   });
-  Lab.test('create dir PUT', function (done) {
+  lab.test('create dir PUT', function (done) {
     var dirpath = baseDir+'/dir2/';
     createDir(dirpath, done);
   });
-  Lab.test('create dir PUT with mode 400', function (done) {
+  lab.test('create dir PUT with mode 400', function (done) {
     var dirpath = baseDir+'/dir2/';
     createDir(dirpath, {mode: 400}, done);
   });
 });
 
 
-Lab.experiment('delete tests', function () {
-  Lab.beforeEach(function (done) {
+lab.experiment('delete tests', function () {
+  lab.beforeEach(function (done) {
     cleanBase(done);
   });
-  Lab.test('delete dir', function (done) {
+  lab.test('delete dir', function (done) {
     var dirpath = baseDir+'/dir2/';
     createDir(dirpath, function(err) {
       if (err) {
@@ -236,7 +237,7 @@ Lab.experiment('delete tests', function () {
     });
   });
 
-  Lab.test('delete nonexiting dir', function (done) {
+  lab.test('delete nonexiting dir', function (done) {
     var dirpath = baseDir+'/dir2/fake/';
     supertest(server)
       .del(dirpath)
@@ -258,7 +259,7 @@ Lab.experiment('delete tests', function () {
       });
   });
 
-  Lab.test('attempt to delete file with trailing slash', function (done) {
+  lab.test('attempt to delete file with trailing slash', function (done) {
     var filePath = baseDir+'/file';
     createFile(filePath, "test", function (err) {
       if(err) return done(err);
@@ -269,7 +270,7 @@ Lab.experiment('delete tests', function () {
     });
   });
 
-  Lab.test('attempt to a folder with files and folders in it without clobber', function (done) {
+  lab.test('attempt to a folder with files and folders in it without clobber', function (done) {
     var dir1 =  baseDir+'/dir1/';
     var file1 = dir1+'/file1';
     var file2 = dir1+'/file2';
@@ -324,7 +325,7 @@ Lab.experiment('delete tests', function () {
     });
   });
 
-  Lab.test('attempt to a folder with files and folders in it with clobber', function (done) {
+  lab.test('attempt to a folder with files and folders in it with clobber', function (done) {
     var dir1 =  baseDir+'/dir1/';
     var file1 = dir1+'/file1';
     var file2 = dir1+'/file2';
@@ -381,7 +382,7 @@ Lab.experiment('delete tests', function () {
 });
 
 
-Lab.experiment('read tests', function () {
+lab.experiment('read tests', function () {
   var dir2R =  baseDir+'/dir2';
   var dir2 =  dir2R+'/';
   var dir1D = baseDir+'/dir1';
@@ -390,7 +391,7 @@ Lab.experiment('read tests', function () {
   var dir1_file1 = dir2+'file2.txt';
   var fileContent = "test";
 
-  Lab.beforeEach(function (done) {
+  lab.beforeEach(function (done) {
     async.series([
       function(cb) {
         cleanBase(cb);
@@ -410,7 +411,7 @@ Lab.experiment('read tests', function () {
     ], done);
   });
 
-  Lab.test('get dir ls', function (done) {
+  lab.test('get dir ls', function (done) {
     supertest(server)
       .get(dir2)
       .expect(200)
@@ -424,7 +425,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('test setModifyOut', function (done) {
+  lab.test('test setModifyOut', function (done) {
     var server2 = express();
     server2.use(function(req, res, next) {
       req.modifyOut = function (file) {
@@ -448,7 +449,7 @@ Lab.experiment('read tests', function () {
   });
 
 
-  Lab.test('get filled dir ls', function (done) {
+  lab.test('get filled dir ls', function (done) {
     supertest(server)
       .get(baseDir+'/')
       .expect(200)
@@ -462,7 +463,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('get dir ls recursive', function (done) {
+  lab.test('get dir ls recursive', function (done) {
     supertest(server)
       .get(baseDir+'/')
       .query({recursive: "true"})
@@ -477,7 +478,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('get empty dir ls', function (done) {
+  lab.test('get empty dir ls', function (done) {
     supertest(server)
       .get(dir1)
       .expect(200)
@@ -491,7 +492,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('get dir ls with redirect', function (done) {
+  lab.test('get dir ls with redirect', function (done) {
     supertest(server)
       .get(dir2R)
       .expect(303)
@@ -505,7 +506,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('get empty dir ls with redirect', function (done) {
+  lab.test('get empty dir ls with redirect', function (done) {
     supertest(server)
       .get(dir1D)
       .expect(303)
@@ -519,7 +520,7 @@ Lab.experiment('read tests', function () {
       });
   });
 
-  Lab.test('get dir which does not exist', function (done) {
+  lab.test('get dir which does not exist', function (done) {
     supertest(server)
       .get(dir1D+"/fake/")
       .expect(404)
@@ -527,7 +528,7 @@ Lab.experiment('read tests', function () {
   });
 });
 
-Lab.experiment('move tests', function () {
+lab.experiment('move tests', function () {
   var dir1 =  baseDir+'/dir1/';
   var dir2 =  baseDir+'/dir2/'; // empty
   var dir3 =  baseDir+'/dir3/';
@@ -540,7 +541,7 @@ Lab.experiment('move tests', function () {
 
   var fileContent = "test";
 
-  Lab.beforeEach(function (done) {
+  lab.beforeEach(function (done) {
     async.series([
       function(cb) {
         cleanBase(cb);
@@ -569,13 +570,13 @@ Lab.experiment('move tests', function () {
     ], done);
   });
 
-  Lab.test('move empty dir in same dir (rename) with trailing slash', function (done) {
+  lab.test('move empty dir in same dir (rename) with trailing slash', function (done) {
     moveDir(dir2, baseDir+'/new/', false, false, done);
   });
-  Lab.test('move empty dir in same dir (rename) without trailing slash', function (done) {
+  lab.test('move empty dir in same dir (rename) without trailing slash', function (done) {
     moveDir(dir2, baseDir+'/new', false, false, done);
   });
-  Lab.test('move empty dir to itself', function (done) {
+  lab.test('move empty dir to itself', function (done) {
     moveDir(dir2, dir2, false, false, function(err) {
       if(err) {
         if (err.code === 'EEXIST') {
@@ -586,16 +587,16 @@ Lab.experiment('move tests', function () {
       return done(new Error('dir was moved on top of itself'));
     });
   });
-  Lab.test('move empty dir to same dir with similar name', function (done) {
+  lab.test('move empty dir to same dir with similar name', function (done) {
     moveDir(dir2, dir2.substr(0, dir2.length - 1)+"add", false, false, done);
   });
-  Lab.test('move empty dir into a dir with trailing slash', function (done) {
+  lab.test('move empty dir into a dir with trailing slash', function (done) {
     moveDir(dir2, dir1+'new/', false, false, done);
   });
-  Lab.test('move empty dir into a dir without trailing slash', function (done) {
+  lab.test('move empty dir into a dir without trailing slash', function (done) {
     moveDir(dir2, dir1+'new', false, false, done);
   });
-  Lab.test('move empty dir into itself', function (done) {
+  lab.test('move empty dir into itself', function (done) {
     moveDir(dir2, dir2+'new/', false, false, function(err) {
       if(err) {
         if (err.code === 'EPERM') {
@@ -607,14 +608,14 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move empty dir out of dir', function (done) {
+  lab.test('move empty dir out of dir', function (done) {
     moveDir(dir2, dir1+'new/', false, false, function(err) {
       if (err) return done(err);
       moveDir(dir1+'new/', dir2, false, false, done);
     });
   });
 
-  Lab.test('move empty dir onto existing dir', function (done) {
+  lab.test('move empty dir onto existing dir', function (done) {
     moveDir(dir2, dir1, false, false, function(err) {
       if(err) {
         if (err.code === 'EEXIST') {
@@ -626,11 +627,11 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move empty dir onto existing dir with clobber', function (done) {
+  lab.test('move empty dir onto existing dir with clobber', function (done) {
     moveDir(dir2, dir1, true, false, done);
   });
 
-  Lab.test('move empty dir into non existing dir', function (done) {
+  lab.test('move empty dir into non existing dir', function (done) {
     moveDir(dir2, dir1+'fake/dir/', false, false, function(err) {
       if(err) {
         if (err.code === 'ENOENT') {
@@ -642,7 +643,7 @@ Lab.experiment('move tests', function () {
     });
   });
 
-   Lab.test('move non existing dir into existing dir', function (done) {
+   lab.test('move non existing dir into existing dir', function (done) {
     moveDir(dir2+'fake/dir/', dir1, false, false, function(err) {
       if(err) {
         if (err.code === 'EINVAL') {
@@ -654,7 +655,7 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move non existing dir into non existing dir', function (done) {
+  lab.test('move non existing dir into non existing dir', function (done) {
     moveDir(dir2+'fake/dir/', dir1+'fake/dir/', false, false, function(err) {
       if(err) {
         if (err.code === 'EINVAL') {
@@ -666,28 +667,28 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move empty dir into non existing dir with mkdirp', function (done) {
+  lab.test('move empty dir into non existing dir with mkdirp', function (done) {
     moveDir(dir2, dir1+'fake/dir/', false, true, done);
   });
 
-  Lab.test('move empty dir into non existing long dir with mkdirp', function (done) {
+  lab.test('move empty dir into non existing long dir with mkdirp', function (done) {
     moveDir(dir2, dir1+'fake/long/long/long/dir/', false, true, done);
   });
 
   // now try with full dir
-  Lab.test('move dir in same dir (rename) with trailing slash', function (done) {
+  lab.test('move dir in same dir (rename) with trailing slash', function (done) {
     moveDir(dir1, baseDir+'/new/', false, false, done);
   });
-  Lab.test('move dir in same dir (rename) without trailing slash', function (done) {
+  lab.test('move dir in same dir (rename) without trailing slash', function (done) {
     moveDir(dir1, baseDir+'/new', false, false, done);
   });
-  Lab.test('move dir into a dir with trailing slash', function (done) {
+  lab.test('move dir into a dir with trailing slash', function (done) {
     moveDir(dir1, dir2+'new/', false, false, done);
   });
-  Lab.test('move dir into a dir without trailing slash', function (done) {
+  lab.test('move dir into a dir without trailing slash', function (done) {
     moveDir(dir1, dir2+'new', false, false, done);
   });
-  Lab.test('move dir to itself', function (done) {
+  lab.test('move dir to itself', function (done) {
     moveDir(dir1, dir1, false, false, function(err) {
       if(err) {
         if (err.code === 'EEXIST') {
@@ -698,10 +699,10 @@ Lab.experiment('move tests', function () {
       return done(new Error('dir was moved on top of itself'));
     });
   });
-  Lab.test('move dir to same dir with similar name', function (done) {
+  lab.test('move dir to same dir with similar name', function (done) {
     moveDir(dir1, dir1.substr(0, dir2.length - 1)+"add", false, false, done);
   });
-  Lab.test('move dir to itself', function (done) {
+  lab.test('move dir to itself', function (done) {
     moveDir(dir1, dir1, false, false, function(err) {
       if(err) {
         if (err.code === 'EEXIST') {
@@ -713,7 +714,7 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move dir into itself', function (done) {
+  lab.test('move dir into itself', function (done) {
     moveDir(dir1, dir1+'new/', false, false, function(err) {
       if(err) {
         if (err.code === 'EPERM') {
@@ -725,14 +726,14 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move dir out of dir', function (done) {
+  lab.test('move dir out of dir', function (done) {
     moveDir(dir1, dir2+'new/', false, false, function(err) {
       if (err) return done(err);
       moveDir(dir2+'new/', dir1, false, false, done);
     });
   });
 
-  Lab.test('move dir onto existing dir', function (done) {
+  lab.test('move dir onto existing dir', function (done) {
     moveDir(dir1, dir2, false, false, function(err) {
       if(err) {
         if (err.code === 'EEXIST') {
@@ -744,11 +745,11 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move dir onto existing dir with clobber', function (done) {
+  lab.test('move dir onto existing dir with clobber', function (done) {
     moveDir(dir1, dir2, true, false, done);
   });
 
-  Lab.test('move dir into non existing dir', function (done) {
+  lab.test('move dir into non existing dir', function (done) {
     moveDir(dir1, dir2+'fake/dir/', false, false, function(err) {
       if(err) {
         if (err.code === 'ENOENT') {
@@ -760,15 +761,15 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('move dir into non existing dir with mkdirp', function (done) {
+  lab.test('move dir into non existing dir with mkdirp', function (done) {
     moveDir(dir1, dir2+'fake/dir/', false, true, done);
   });
 
-  Lab.test('move dir into non existing long dir with mkdirp', function (done) {
+  lab.test('move dir into non existing long dir with mkdirp', function (done) {
     moveDir(dir1, dir2+'fake/long/long/long/dir/', false, true, done);
   });
 
-  Lab.test('clober from inside dir to an empty one above it', function (done) {
+  lab.test('clober from inside dir to an empty one above it', function (done) {
     moveDir(dir1_dir1, dir2, false, false, function(err) {
       if(err) {
         if (err.code === 'EEXIST') {
@@ -780,11 +781,11 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('clober from inside dir to an empty one above it with clober', function (done) {
+  lab.test('clober from inside dir to an empty one above it with clober', function (done) {
     moveDir(dir1_dir1, dir2, true, false, done);
   });
 
-  Lab.test('clober from inside dir to an full one above it', function (done) {
+  lab.test('clober from inside dir to an full one above it', function (done) {
     moveDir(dir1_dir1, dir3, false, false, function(err) {
       if(err) {
         if (err.code === 'EEXIST') {
@@ -796,7 +797,7 @@ Lab.experiment('move tests', function () {
     });
   });
 
-  Lab.test('clober from inside dir to an full one above it with clobber', function (done) {
+  lab.test('clober from inside dir to an full one above it with clobber', function (done) {
     moveDir(dir1_dir1, dir3, true, false, done);
   });
 

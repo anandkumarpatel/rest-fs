@@ -4,16 +4,25 @@ var fileDriver = require('./fsDriver.js');
 var url = require('url');
 var mime = require('mime');
 var path = require('path');
+var mw = require('dat-middleware');
+var flow = require('middleware-flow');
+
 /* used to modify format out output of data;
    input of function is full filepath
 */
 var modifyOut = null;
+var isJson = mw.req('headers[\'content-type\']').matches(/application\/json/);
+
 var fileserver = function(app) {
   if (!app) {
     throw new Error('express app required');
   }
 
-  app.use(bodyParser.json());
+
+  app.use(flow.mwIf(isJson)
+    .then(bodyParser.json())
+    .else(bodyParser.raw()));
+
   app.use(bodyParser.urlencoded({
     extended: true
   }));
@@ -111,7 +120,7 @@ var getFile = function (req, res, next) {
       }
     }
 
-    res.set('Content-Type', mime.lookup(filePath));
+    res.set('content-type', mime.lookup(filePath));
     res.status(200).send(data);
   });
 };
@@ -137,6 +146,11 @@ var getFile = function (req, res, next) {
   }
 */
 var postFileOrDir = function (req, res, next) {
+  var isJson = false;
+  if (req.headers['content-type'] === 'string') {
+    isJson = req.headers['content-type'].matches(/application\/json/);
+  }
+
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isDir = dirPath.substr(-1) == '/';
   var options = {};
@@ -155,7 +169,11 @@ var postFileOrDir = function (req, res, next) {
       sendCode(201, req, res, next, formatOutData(req, dirPath)));
   } else {
     options.encoding = req.body.encoding  || 'utf8';
-    options.mode = req.body.mode  || 438;
+    options.mode = req.body.mode || 438;
+
+    if (!isJson) {
+      return fileDriver.writeFileStream(dirPath, req);
+    }
     var data = req.body.content || '';
     fileDriver.writeFile(dirPath, data, options,
       sendCode(201, req, res, next, formatOutData(req, dirPath)));

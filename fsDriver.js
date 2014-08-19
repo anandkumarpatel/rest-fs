@@ -88,6 +88,19 @@ var writeFile = function(filename, data, options, cb)  {
 };
 
 /*
+  write file with stream
+*/
+var writeFileStream = function(filepath, stream, options, cb)  {
+  try {
+    var file = fs.createWriteStream(filepath, options);
+    stream.pipe(file);
+    cb();
+  } catch(err) {
+    cb(err);
+  }
+};
+
+/*
   delete file
 */
 var unlink = function(filename, cb)  {
@@ -138,3 +151,4 @@ module.exports.rmdir = rmdir;
 module.exports.writeFile = writeFile;
 module.exports.unlink = unlink;
 module.exports.move = move;
+module.exports.writeFileStream = writeFileStream;
