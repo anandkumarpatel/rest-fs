@@ -6,25 +6,22 @@ var mime = require('mime');
 var path = require('path');
 var mw = require('dat-middleware');
 var flow = require('middleware-flow');
-
-/* used to modify format out output of data;
-   input of function is full filepath
-*/
-var modifyOut = null;
-var isJson = mw.req('headers[\'content-type\']').matches(/application\/json/);
+var morgan = require('morgan');
+var error = require('debug')('rest-fs:error');
+error.log = console.error.bind(console);
 
 var fileserver = function(app) {
   if (!app) {
     throw new Error('express app required');
   }
 
-
-  app.use(flow.mwIf(isJson)
-    .then(bodyParser.json())
-    .else(bodyParser.raw()));
-
+  app.use(require('express-domain-middleware'));
+  app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({
     extended: true
+  }));
+  app.use(morgan('combined', {
+    skip: function () { return process.env.LOG !== 'true'; }
   }));
   app.get(/^\/.+\/$/, getDir);
   app.get(/^\/.+[^\/]$/, getFile);
@@ -33,6 +30,7 @@ var fileserver = function(app) {
   app.delete(/^\/.+\/$/, delDir);
   app.delete(/^\/.+[^\/]$/, delFile);
   app.use(function (err, req, res, next)  {
+    error('uncaught error', err);
     res.status(500).send(err);
   });
   return app;
@@ -45,13 +43,11 @@ var fileserver = function(app) {
   *optional*
   ?recursive = list recursively default false
 
-  return:
-  [
+  return: list of files/dirs
+  res.body = [
     {
-      "name" : "file1", // name of dir or file
-      "path" : "/path/to/file", // path to dir or file
-      "dir" : false // true if directory
-    },
+      "fullFilePath"
+    }, ...
   ]
 */
 var getDir = function (req, res, next) {
@@ -59,30 +55,25 @@ var getDir = function (req, res, next) {
   var isRecursive = req.query.recursive || "false";
 
   var handList = function (err, files) {
-    if (err) {
+    if (err && err.code === 'ENOTDIR') {
       // this this is a file, redirect to file path
-      if (err.code === 'ENOTDIR') {
-        var originalUrl = url.parse(req.originalUrl);
-        originalUrl.pathname = originalUrl.pathname.substr(0, originalUrl.pathname.length - 1);
-        var target = url.format(originalUrl);
-        res.statusCode = 303;
-        res.setHeader('Location', target);
-        res.end('Redirecting to ' + target);
-        return;
-      } else if (err.code === 'ENOENT') {
-        return res.status(404).end();
-      } else {
-        return next(err);
+      var originalUrl = url.parse(req.originalUrl);
+      originalUrl.pathname = originalUrl.pathname.substr(0, originalUrl.pathname.length - 1);
+      var target = url.format(originalUrl);
+      res.statusCode = 303;
+      res.setHeader('Location', target);
+      return res.end('Redirecting to ' + target);
+    }
+    if (files) {
+      for (var i = files.length - 1; i >= 0; i--) {
+        files[i] = formatOutData(req, files[i]);
       }
     }
-    for (var i = files.length - 1; i >= 0; i--) {
-      files[i] = formatOutData(req, files[i]);
-    }
-    res.json(files);
+    sendCode(200, req, res, next, files)(err);
   };
 
   if (isRecursive === "true") {
-    return fileDriver.listAll(dirPath, false, handList);
+    return fileDriver.listAll(dirPath, handList);
   } else {
     return fileDriver.list(dirPath, handList);
   }
@@ -96,32 +87,25 @@ var getDir = function (req, res, next) {
   *optional*
   ?encoding = default utf8
 
-  return:
-  content of specified file
+  return: data of file
+  res.body = {"content of specified file"}
 */
 var getFile = function (req, res, next) {
   var filePath = decodeURI(url.parse(req.url).pathname);
   var encoding = req.query.encoding || 'utf8';
   fileDriver.readFile(filePath, encoding, function(err, data) {
-    if (err) {
+    if (err && err.code === 'EISDIR') {
       // this this is a dir, redirect to dir path
-      if (err.code === 'EISDIR') {
-        var originalUrl = url.parse(req.originalUrl);
-        originalUrl.pathname += '/';
-        var target = url.format(originalUrl);
-        res.statusCode = 303;
-        res.setHeader('Location', target);
-        res.end('Redirecting to ' + target);
-        return;
-      } else if (err.code === 'ENOENT') {
-        return res.status(404).end();
-      } else {
-        return next(err);
-      }
+      var originalUrl = url.parse(req.originalUrl);
+      originalUrl.pathname += '/';
+      var target = url.format(originalUrl);
+      res.statusCode = 303;
+      res.setHeader('Location', target);
+      return res.end('Redirecting to ' + target);
     }
 
     res.set('content-type', mime.lookup(filePath));
-    res.status(200).send(data);
+    sendCode(200, req, res, next, data)(err);
   });
 };
 
@@ -139,21 +123,18 @@ var getFile = function (req, res, next) {
   body.encoding = default utf8
 
   returns: modified resource
-  {
-    "name" : "file1", // name of dir or file
-    "path" : "/path/to/file", // path to dir or file
-    "dir" : false // true if directory
+  res.body = {
+    "fullFilePath" or dir
   }
 */
 var postFileOrDir = function (req, res, next) {
+  var dirPath =  decodeURI(url.parse(req.url).pathname);
+  var isDir = dirPath.substr(-1) == '/';
+  var options = {};
   var isJson = false;
   if (typeof req.headers['content-type'] === 'string') {
     isJson = ~req.headers['content-type'].indexOf('application/json') === -1 ? true : false;
   }
-
-  var dirPath =  decodeURI(url.parse(req.url).pathname);
-  var isDir = dirPath.substr(-1) == '/';
-  var options = {};
   // move/rename if newPath exists
   if (req.body.newPath) {
     options.clobber = req.body.clobber || false;
@@ -183,7 +164,6 @@ var postFileOrDir = function (req, res, next) {
   var data = req.body.content || '';
   fileDriver.writeFile(dirPath, data, options,
     sendCode(201, req, res, next, formatOutData(req, dirPath)));
-
 };
 
 /* PUT
@@ -195,10 +175,8 @@ var postFileOrDir = function (req, res, next) {
   body.encoding = default utf8
 
   returns: modified resource
-  {
-    "name" : "file1", // name of dir or file
-    "path" : "/path/to/file", // path to dir or file
-    "dir" : false // true if directory
+  res.body = {
+    "fullFilePath"
   }
 */
 var putFileOrDir = function (req, res, next) {
@@ -226,14 +204,12 @@ var putFileOrDir = function (req, res, next) {
   body.clobber = will remove non-empty dir (defaut: false)
 
   return:
-  {}
+  res.body = {}
 */
 var delDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var clobber = req.body.clobber  || false;
-  fileDriver.rmdir(dirPath, clobber,
-    sendCode(200, req, res, next, formatOutData(req, dirPath))
-  );
+  fileDriver.rmdir(dirPath, clobber, sendCode(200, req, res, next, {}));
 };
 
 /* DEL
@@ -241,13 +217,11 @@ var delDir = function (req, res, next) {
   deletes file
 
   return:
-  {}
+  res.body = {}
 */
 var delFile = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  fileDriver.unlink(dirPath,
-    sendCode(200, req, res, next, formatOutData(req, dirPath))
-  );
+  fileDriver.unlink(dirPath, sendCode(200, req, res, next, {}));
 };
 
 // Helpers
@@ -264,6 +238,7 @@ var formatOutData = function (req, filepath) {
 var sendCode = function(code, req, res, next, out) {
   return function (err) {
     if (err) {
+      error('ERROR', req.url, err);
       code = 500;
       out = err;
 
@@ -271,15 +246,15 @@ var sendCode = function(code, req, res, next, out) {
         code = 404;
       } if (err.code === 'EPERM') {
         code = 403;
-      } if (err.code === 'ENOTDIR' || err.code === 'EISDIR') {
+      } if (err.code === 'ENOTDIR' ||
+            err.code === 'EISDIR') {
         code = 400;
       } if (err.code === 'ENOTEMPTY' ||
-        err.code === 'EEXIST' ||
-        err.code === 'EINVAL') {
+            err.code === 'EEXIST' ||
+            err.code === 'EINVAL') {
         code = 409;
       }
     }
-
     res.status(code).send(out);
   };
 };

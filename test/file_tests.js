@@ -703,4 +703,26 @@ lab.experiment('stream tests', function () {
     });
     fs.createReadStream(dataFile).pipe(r);
   });
+
+  lab.test('POST - stream to path with different headers', function (done) {
+    var dataFile = baseFolder+'/data.txt';
+    var testText = 'lots of text';
+    var testFile = baseFolder+'/folder/newfile.txt';
+
+    fs.writeFileSync(dataFile, testText);
+
+    var r = request({
+      url: 'http://localhost:'+testPort+testFile,
+      method: 'POST',
+      pool: false,
+      headers: {
+        'content-type': 'application/json'
+      }
+    }, function(err, res) {
+      if (err) { return done(err); }
+      Lab.expect(res.statusCode).to.equal(500);
+      done();
+    });
+    fs.createReadStream(dataFile).pipe(r);
+  });
 });
