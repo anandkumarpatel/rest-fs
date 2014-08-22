@@ -85,7 +85,8 @@ function moveFile(oldpath, newPath, doClobber, doMkdirp, cb) {
     .end(function(err, res){
       if (err) {
         return cb(err);
-      } else if (200 !== res.statusCode) {
+      }
+      if (200 !== res.statusCode) {
         return cb(res.body);
       }
       async.series([
@@ -174,9 +175,9 @@ lab.experiment('basic create tests', function () {
       fs.readFile(filepath, {
         encoding: 'utf8'
       }, function (err, data) {
-        if (err) {
-          return done(err);
-        } else if (!~data.indexOf(testText)) {
+        if (err) { return done(err); }
+
+        if (!~data.indexOf(testText)) {
           return done(new Error('incorrect data'));
         } else {
           return done();
@@ -192,9 +193,9 @@ lab.experiment('basic create tests', function () {
       fs.readFile(filepath, {
         encoding: 'utf8'
       }, function (err, data) {
-        if (err) {
-          return done(err);
-        } else if (!~data.indexOf(testText)) {
+        if (err) { return done(err); }
+
+        if (!~data.indexOf(testText)) {
           return done(new Error('incorrect data'));
         } else {
           return done();
@@ -268,9 +269,8 @@ lab.experiment('basic delete tests', function () {
   lab.test('delete file', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFile(filepath, function(err) {
-      if (err) {
-        return done(err);
-      }
+      if (err) { return done(err); }
+
       rmFile(filepath, done);
     });
   });
@@ -278,9 +278,8 @@ lab.experiment('basic delete tests', function () {
   lab.test('delete file with trailing slash', function (done) {
     var filepath = baseFolder+'/test_file.txt';
     createFile(filepath, function(err) {
-      if (err) {
-        return done(err);
-      }
+      if (err) { return done(err); }
+
       rmFile(filepath + '/', function (err, res) {
         if (err) { return done(err); }
         Lab.expect(res.statusCode).to.equal(400);
@@ -291,9 +290,8 @@ lab.experiment('basic delete tests', function () {
 
   lab.test('delete file that does not exist', function (done) {
     rmFile(baseFolder+'/fake.txt', function (err, res) {
-      if (err) {
-        return done(err);
-      }
+      if (err) { return done(err); }
+
       Lab.expect(res.statusCode).to.equal(404);
       return done();
     });
@@ -301,9 +299,8 @@ lab.experiment('basic delete tests', function () {
 
   lab.test('try to delete folder with file api', function (done) {
     rmFile(baseFolder, function (err, res) {
-      if (err) {
-        return done(err);
-      }
+      if (err) { return done(err); }
+
       if (res.statusCode === 400 || res.statusCode === 403){
         return done();
       }
@@ -340,9 +337,9 @@ lab.experiment('read tests', function () {
       .get(file2path)
       .expect(200)
       .end(function(err, res){
-        if (err) {
-          return done(err);
-        } else if (!~fileContent.indexOf(res.text)) {
+        if (err) { return done(err); }
+
+        if (!~fileContent.indexOf(res.text)) {
           return done(new Error('file read wrong data'));
         }
         return done();
@@ -355,9 +352,9 @@ lab.experiment('read tests', function () {
       .query({encoding: 'utf8'})
       .expect(200)
       .end(function(err, res){
-        if (err) {
-          return done(err);
-        } else if (!~fileContent.indexOf(res.text)) {
+        if (err) { return done(err); }
+
+        if (!~fileContent.indexOf(res.text)) {
           return done(new Error('file read wrong data'));
         }
         return done();
@@ -369,9 +366,9 @@ lab.experiment('read tests', function () {
       .get(file1path)
       .expect(200)
       .end(function(err, res){
-        if (err) {
-          return done(err);
-        } else if (res.text !== "") {
+        if (err) { return done(err); }
+
+        if (res.text !== "") {
           return done(new Error('file should be empty'));
         }
         return done();
@@ -383,9 +380,9 @@ lab.experiment('read tests', function () {
       .get(file2path+'/')
       .expect(303)
       .end(function(err, res){
-        if (err) {
-          return done(err);
-        } else if (!~res.text.indexOf('Redirecting to '+file2path)) {
+        if (err) { return done(err); }
+
+        if (!~res.text.indexOf('Redirecting to '+file2path)) {
           return done(new Error('not redirecting'));
         }
         return done();
@@ -397,9 +394,9 @@ lab.experiment('read tests', function () {
       .get(file1path+'/')
       .expect(303)
       .end(function(err, res){
-        if (err) {
-          return done(err);
-        } else if (!~res.text.indexOf('Redirecting to '+file1path)) {
+        if (err) { return done(err); }
+
+        if (!~res.text.indexOf('Redirecting to '+file1path)) {
           return done(new Error('not redirecting'));
         }
         return done();
@@ -411,9 +408,7 @@ lab.experiment('read tests', function () {
       .get(file1path+'.fake.txt')
       .expect(404)
       .end(function(err, res){
-        if (err) {
-          return done(err);
-        }
+        if (err) { return done(err); }
         return done();
       });
   });
@@ -508,50 +503,204 @@ lab.experiment('move tests', function () {
 });
 
 lab.experiment('stream tests', function () {
+  var app;
+  lab.beforeEach(cleanBase);
+  lab.beforeEach(function(done){
+    app = server.listen(testPort,done);
+  });
+  lab.afterEach(function(done){
+    app.close(done);
+  });
+  lab.after(function (done) {
+    rimraf(baseFolder, done);
+  });
+
   lab.test('POST - stream file', function (done) {
     var dataFile = baseFolder+'/data.txt';
     var testText = 'lots of text';
     var testFile = baseFolder+'/stream_test.txt';
 
     fs.writeFileSync(dataFile, testText);
-    var app = server.listen(testPort,
-      function() {
-        fs.createReadStream(dataFile)
-        .pipe(request.post('http://localhost:'+testPort+testFile))
-        .on('end', function(err, res) {
-          app.close(function() {
-            if (err) {
-              return done(err);
-            }
-            var data = fs.readFileSync(testFile);
-            Lab.expect(data.toString()).to.equal(testText);
-            done();
-          });
-        });
+
+    var r = request({
+      url: 'http://localhost:'+testPort+testFile,
+      method: 'POST',
+      pool: false
+    }, function(err, res) {
+      if (err) { return done(err); }
+
+      Lab.expect(res.statusCode).to.equal(201);
+      Lab.expect(res.body).to.equal(testFile);
+      var data = fs.readFileSync(testFile);
+      Lab.expect(data.toString()).to.equal(testText);
+      done();
     });
+    fs.createReadStream(dataFile).pipe(r);
   });
 
-  lab.test('POST - stream existing file', function (done) {
+  lab.test('POST - stream existing file with clobber', function (done) {
     var dataFile = baseFolder+'/data.txt';
     var testText = 'lots of text';
     var testFile = baseFolder+'/stream_test.txt';
 
     fs.writeFileSync(dataFile, testText);
     fs.writeFileSync(testFile, testText);
-    var app = server.listen(testPort,
-      function() {
-        fs.createReadStream(dataFile)
-        .pipe(request.post('http://localhost:'+testPort+testFile))
-        .on('end', function(err, res) {
-          app.close(function() {
-            if (err) {
-              return done(err);
-            }
-            var data = fs.readFileSync(testFile);
-            Lab.expect(data.toString()).to.equal(testText);
-            done();
-          });
-        });
+
+    var r = request({
+      url: 'http://localhost:'+testPort+testFile,
+      qs: {
+        clobber: true
+      },
+      method: 'POST',
+      pool: false
+    }, function(err, res) {
+      if (err) { return done(err); }
+
+      Lab.expect(res.statusCode).to.equal(201);
+      Lab.expect(res.body).to.equal(testFile);
+      var data = fs.readFileSync(testFile);
+      Lab.expect(data.toString()).to.equal(testText);
+      return done();
     });
+    fs.createReadStream(dataFile).pipe(r);
+  });
+
+  lab.test('POST - stream file with clobber, mode, and encoding', function (done) {
+    var dataFile = baseFolder+'/data.txt';
+    var testText = 'lots of text';
+    var testFile = baseFolder+'/stream_test.txt';
+
+    fs.writeFileSync(dataFile, testText);
+
+    var r = request({
+      url: 'http://localhost:'+testPort+testFile,
+      qs: {
+        clobber: true,
+        mode: '0666',
+        encoding: 'utf8'
+      },
+      method: 'POST',
+      pool: false
+    }, function(err, res) {
+      if (err) { return done(err); }
+
+      Lab.expect(res.statusCode).to.equal(201);
+      Lab.expect(res.body).to.equal(testFile);
+      var data = fs.readFileSync(testFile);
+      Lab.expect(data.toString()).to.equal(testText);
+      return done();
+    });
+    fs.createReadStream(dataFile).pipe(r);
+  });
+
+  lab.test('POST - stream existing file with out clobber', function (done) {
+    var dataFile = baseFolder+'/data.txt';
+    var testText = 'lots of text';
+    var testFile = baseFolder+'/stream_test.txt';
+
+    fs.writeFileSync(dataFile, testText);
+    fs.writeFileSync(testFile, testText);
+    var data = fs.readFileSync(testFile);
+    Lab.expect(data.toString()).to.equal(testText);
+    var r = request({
+      url: 'http://localhost:'+testPort+testFile,
+      method: 'POST',
+      pool: false
+    }, function(err, res) {
+      if (err) { return done(err); }
+
+      Lab.expect(res.statusCode).to.equal(409);
+      return done();
+    });
+
+    fs.createReadStream(dataFile).pipe(r);
+  });
+
+  lab.test('POST - stream over folder', function (done) {
+    var dataFile = baseFolder+'/data.txt';
+    var testText = 'lots of text';
+    var testFile = baseFolder+'/stream_test';
+
+    fs.writeFileSync(dataFile, testText);
+    fs.mkdirSync(testFile);
+
+    var r = request({
+      url: 'http://localhost:'+testPort+testFile,
+      method: 'POST',
+      pool: false
+    }, function(err, res) {
+      if (err) { return done(err); }
+
+      Lab.expect(res.statusCode).to.equal(409);
+      done();
+    });
+    fs.createReadStream(dataFile).pipe(r);
+  });
+
+  lab.test('POST - stream over folder with clobber', function (done) {
+    var dataFile = baseFolder+'/data.txt';
+    var testText = 'lots of text';
+    var testFile = baseFolder+'/stream_test';
+
+    fs.writeFileSync(dataFile, testText);
+    fs.mkdirSync(testFile);
+
+    var r = request({
+      url: 'http://localhost:'+testPort+testFile,
+      qs: {
+        clobber: true
+      },
+      method: 'POST',
+      pool: false
+    }, function(err, res) {
+      if (err) { return done(err); }
+
+      Lab.expect(res.statusCode).to.equal(400);
+      done();
+    });
+    fs.createReadStream(dataFile).pipe(r);
+  });
+
+  lab.test('POST - stream to path which does not exist', function (done) {
+    var dataFile = baseFolder+'/data.txt';
+    var testText = 'lots of text';
+    var testFile = baseFolder+'/folder/newfile.txt';
+
+    fs.writeFileSync(dataFile, testText);
+
+    var r = request({
+      url: 'http://localhost:'+testPort+testFile,
+      method: 'POST',
+      pool: false
+    }, function(err, res) {
+      if (err) { return done(err); }
+
+      Lab.expect(res.statusCode).to.equal(404);
+      done();
+    });
+    fs.createReadStream(dataFile).pipe(r);
+  });
+
+  lab.test('POST - stream to path which does not exist with clobber', function (done) {
+    var dataFile = baseFolder+'/data.txt';
+    var testText = 'lots of text';
+    var testFile = baseFolder+'/folder/newfile.txt';
+
+    fs.writeFileSync(dataFile, testText);
+
+    var r = request({
+      url: 'http://localhost:'+testPort+testFile,
+      qs: {
+        clobber: true
+      },
+      method: 'POST',
+      pool: false
+    }, function(err, res) {
+      if (err) { return done(err); }
+
+      Lab.expect(res.statusCode).to.equal(404);
+      done();
+    });
+    fs.createReadStream(dataFile).pipe(r);
   });
 });
