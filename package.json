@@ -35,7 +35,8 @@
     "dat-middleware": "^1.8.1",
     "middleware-flow": "^0.5.1",
     "morgan": "^1.2.3",
-    "debug": "^1.0.4"
+    "debug": "^1.0.4",
+    "express-domain-middleware": "^0.1.0"
   },
   "devDependencies": {
     "supertest": "*",
