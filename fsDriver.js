@@ -39,10 +39,13 @@ var list = function(reqDir, cb) {
     }
     var formatFileList = function(index) {
       return function (err, stat) {
-        if (err) {
-          return cb(err);
+        // here we do something special. if stat failes we know that there is something here
+        // but we might not have permissons. show it as a file.
+        var isDir = false;
+        if (!err) {
+          isDir = stat.isDirectory() ? '/' : '';
         }
-        var file = path.join(reqDir, files[index], stat.isDirectory() ? '/' : '');
+        file = path.join(reqDir, files[index], isDir);
         filesList.push(file);
         cnt++;
         if (cnt === files.length) {
@@ -91,13 +94,14 @@ var writeFile = function(filename, data, options, cb)  {
   write file with stream
 */
 var writeFileStream = function(filepath, stream, options, cb)  {
-  try {
-    var file = fs.createWriteStream(filepath, options);
-    stream.pipe(file);
-    cb();
-  } catch(err) {
+  var file = fs.createWriteStream(filepath, options);
+  file.on('error', function(err) {
     cb(err);
-  }
+  });
+  file.on('finish', function() {
+    cb();
+  });
+  stream.pipe(file);
 };
 
 /*

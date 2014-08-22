@@ -158,26 +158,32 @@ var postFileOrDir = function (req, res, next) {
   if (req.body.newPath) {
     options.clobber = req.body.clobber || false;
     options.mkdirp = req.body.mkdirp || false;
-    fileDriver.move(dirPath, req.body.newPath, options,
+    return fileDriver.move(dirPath, req.body.newPath, options,
       sendCode(200, req, res, next, formatOutData(req, req.body.newPath)));
-    return;
   }
 
   if (isDir) {
     var mode = req.body.mode || 511;
-    fileDriver.mkdir(dirPath, mode,
-      sendCode(201, req, res, next, formatOutData(req, dirPath)));
-  } else {
-    options.encoding = req.body.encoding  || 'utf8';
-    options.mode = req.body.mode || 438;
-
-    if (!isJson) {
-      return fileDriver.writeFileStream(dirPath, req);
-    }
-    var data = req.body.content || '';
-    fileDriver.writeFile(dirPath, data, options,
+    return fileDriver.mkdir(dirPath, mode,
       sendCode(201, req, res, next, formatOutData(req, dirPath)));
   }
+
+  if (!isJson) {
+    // default is to not clobber
+    options.encoding = req.query.encoding  || 'utf8';
+    options.mode = req.query.mode || 438;
+    options.flags =  req.query.clobber === 'true' ? 'w' : 'wx';
+
+    return fileDriver.writeFileStream(dirPath, req, options,
+      sendCode(201, req, res, next, formatOutData(req, dirPath)));
+  }
+
+  options.encoding = req.body.encoding  || 'utf8';
+  options.mode = req.body.mode || 438;
+  var data = req.body.content || '';
+  fileDriver.writeFile(dirPath, data, options,
+    sendCode(201, req, res, next, formatOutData(req, dirPath)));
+
 };
 
 /* PUT
