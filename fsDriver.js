@@ -7,7 +7,7 @@ var mv = require('mv');
 var rm = require('rimraf');
 
 // returns array of files and dir. trailing slash determines type.
-var listAll = function(reqDir, onlyDir, cb) {
+var listAll = function(reqDir, cb) {
   var finder = findit(reqDir);
   var files = [];
 
@@ -15,11 +15,9 @@ var listAll = function(reqDir, onlyDir, cb) {
     files.push(path.join(dir, '/'));
   });
 
-  if (!onlyDir) {
-    finder.on('file', function (file, stat) {
-      files.push(file);
-    });
-  }
+  finder.on('file', function (file, stat) {
+    files.push(file);
+  });
 
   finder.on('end', function () {
     cb(null, files);
@@ -31,9 +29,8 @@ var list = function(reqDir, cb) {
   var filesList = [];
   var cnt = 0;
   fs.readdir(reqDir, function (err, files) {
-    if (err) {
-      return cb(err);
-    }
+    if (err) { return cb(err); }
+
     if (files.length === 0) {
       return cb(null, []);
     }
@@ -95,9 +92,7 @@ var writeFile = function(filename, data, options, cb)  {
 */
 var writeFileStream = function(filepath, stream, options, cb)  {
   var file = fs.createWriteStream(filepath, options);
-  file.on('error', function(err) {
-    cb(err);
-  });
+  file.on('error', cb);
   file.on('finish', function() {
     cb();
   });
@@ -123,27 +118,26 @@ var move = function (oldPath, newPath, opts, cb) {
     newPath = newPath.substr(0, newPath.length - 1);
   }
 
-
   // workaround for ncp for dirs. should error if we trying to mv into own dir
   fs.stat(oldPath, function(err, stats) {
-    if (err) {
-      return cb(err);
-    }
-    else if (stats.isDirectory() &&
+    if (err) { return cb(err); }
+
+    if (stats.isDirectory() &&
       ~newPath.indexOf(oldPath) &&
       newPath.split("/").length > oldPath.split("/").length) {
         err = new Error('cannot move inside itself');
         err.code = 'EPERM';
         return cb(err);
-    } else if (opts.clobber) {
-      // also work around bug for clobber in dir
-      rm(newPath, function(err) {
-        if (err) { return cb(err); }
-        return mv(oldPath, newPath, opts, cb);
-      });
-    } else {
-      return mv(oldPath, newPath, opts, cb);
     }
+
+    if (opts.clobber) {
+      // also work around bug for clobber in dir
+      return rm(newPath, function(err) {
+        if (err) { return cb(err); }
+        mv(oldPath, newPath, opts, cb);
+      });
+    }
+    return mv(oldPath, newPath, opts, cb);
   });
 };
 

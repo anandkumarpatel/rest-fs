@@ -21,6 +21,12 @@ runs various file and folder test
 
 starts server on port 3000 of your entire system
 
+`LOG=true`
+for access log
+
+`DEBUG=*`
+for debug info
+
 ```
 app = require('express')();
 restfs = require('rest-fs')
@@ -42,16 +48,9 @@ GET /path/to/dir/
   *optional*<br>
   ?recursive = list recursively default false
 
-  returns:
+  returns: list of full file or folder paths (trailing slash tells if dir)
   ```
-  [
-    {
-      "name" : "file1", // name of dir or file
-      "path" : "/path/to/file", // path to dir or file
-      "dir" : false // true if directory
-    },
-    ...
-  ]
+  res.body = [ { "fullDirPath" }, ... ]
   ```
 
 GET /path/to/file
@@ -63,7 +62,7 @@ GET /path/to/file
   ?encoding = default utf8
 
   returns:
-  content of specified file
+  res.body = { "file content" }
 
 
 POST /path/to/file/or/dir
@@ -79,13 +78,14 @@ POST /path/to/file/or/dir
   body.mode = permissions of file (defaults: file 438(0666) dir 511(0777))<br>
   body.encoding = default utf8
 
-  returns: modified resource
+  *optional for stream*<br>
+  query.clobber = overwrite if exist
+  query.mode = permissions of file (defaults: file 438(0666) dir 511(0777))<br>
+  query.encoding = default utf8
+
+  returns: modified resource. (trailing slash tells if dir)
   ```
-  {
-    "name" : "file1", // name of dir or file
-    "path" : "/path/to/file", // path to dir or file
-    "dir" : false // true if directory
-  }
+  req.body = { "fullFileOrDirPath" }
   ```
 
 PUT /path/to/file
@@ -96,13 +96,9 @@ PUT /path/to/file
   body.mode = permissions of file (438 default 0666 octal)<br>
   body.encoding = default utf8
 
-  returns: modified resource
+  returns: modified resource (trailing slash tells if dir)
   ```
-  {
-    "name" : "file1", // name of dir or file
-    "path" : "/path/to/file", // path to dir or file
-    "dir" : false // true if directory
-  }
+  req.body = { "fullFilePath" }
   ```
 
 DEL /path/to/dir/
@@ -112,7 +108,7 @@ DEL /path/to/dir/
 
   returns:
   ```
-  {}
+  req.body = {}
   ```
 
 DEL /path/to/file
@@ -122,5 +118,5 @@ DEL /path/to/file
 
   returns:
   ```
-  {}
+  req.body = {}
   ```
