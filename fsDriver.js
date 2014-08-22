@@ -45,7 +45,7 @@ var list = function(reqDir, cb) {
         if (!err) {
           isDir = stat.isDirectory() ? '/' : '';
         }
-        file = path.join(reqDir, files[index], isDir);
+        var file = path.join(reqDir, files[index], isDir);
         filesList.push(file);
         cnt++;
         if (cnt === files.length) {
