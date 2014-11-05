@@ -117,7 +117,7 @@ var getFile = function (req, res, next) {
   *optional*
   body.newPath = if exist, move/rename file to this location.
   body.clobber = if true will overwrite dest files (default false)
-  body.mkdirp = if true will create path to new locatiin (default false)
+  body.mkdirp = if true will create path to new location (default false)
 
   body.mode = permissons of file (defaults: file 438(0666) dir 511(0777))
   body.encoding = default utf8
