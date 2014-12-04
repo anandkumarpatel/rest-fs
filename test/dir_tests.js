@@ -11,6 +11,7 @@ var async = require('async');
 var rimraf = require('rimraf');
 var walk = require('walkdir');
 var _ = require('lodash');
+var execSync = require('exec-sync');
 
 // attach the .compare method to Array's prototype to call it on any array
 Array.prototype.compare = function (array) {
@@ -205,7 +206,6 @@ lab.experiment('create tests', function () {
   });
 });
 
-
 lab.experiment('delete tests', function () {
   lab.beforeEach(function (done) {
     cleanBase(done);
@@ -387,6 +387,7 @@ lab.experiment('read tests', function () {
   var dir2 =  dir2R+'/';
   var dir1D = baseDir+'/dir1';
   var dir1 =  dir1D+'/';
+  var dir1_symlink1 = dir1+'symlink.txt';
   var file1 = baseDir+'/file1.txt';
   var dir1_file1 = dir2+'file2.txt';
   var fileContent = "test";
@@ -407,6 +408,10 @@ lab.experiment('read tests', function () {
       },
       function(cb) {
         createFile(dir1_file1, fileContent, cb);
+      },
+      function(cb) {
+        execSync('ln -s '+baseDir+'/../testfile'+' '+baseDir+'/testfile');
+        cb();
       }
     ], done);
   });
@@ -454,9 +459,10 @@ lab.experiment('read tests', function () {
       .get(baseDir+'/')
       .expect(200)
       .end(function(err, res){
+        console.log(res.body.length);
         if (err) {
           return done(err);
-        } else if (res.body.length !== 3 || (_.difference(res.body, [ dir1, dir2, file1 ])).length) {
+        } else if (res.body.length !== 4) {
           return done(new Error('file list incorrect'));
         }
         return done();

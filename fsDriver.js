@@ -51,7 +51,7 @@ var list = function(reqDir, cb) {
       };
     };
     for (var i = 0; i < files.length; i++) {
-      fs.stat(path.join(reqDir, files[i]), formatFileList(i));
+      fs.lstat(path.join(reqDir, files[i]), formatFileList(i));
     }
   });
 };
