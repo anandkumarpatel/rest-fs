@@ -101,6 +101,10 @@ function createFile(filepath, text, cb) {
   fs.writeFile(filepath, data, cb);
 }
 
+function createSymLink(src, dst, cb) {
+  fs.symLink(src, dst, 'file', cb);
+}
+
 function moveDir(oldpath, newPath, doClobber, doMkdirp, cb) {
   getDirContents(oldpath, function(err, oldPaths) {
     if(err) return cb(err);
