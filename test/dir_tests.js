@@ -102,10 +102,6 @@ function createFile(filepath, text, cb) {
   fs.writeFile(filepath, data, cb);
 }
 
-function createSymLink(src, dst, cb) {
-  fs.symlink(src, dst, 'file', cb);
-}
-
 function moveDir(oldpath, newPath, doClobber, doMkdirp, cb) {
   getDirContents(oldpath, function(err, oldPaths) {
     if(err) return cb(err);
@@ -463,9 +459,10 @@ lab.experiment('read tests', function () {
       .get(baseDir+'/')
       .expect(200)
       .end(function(err, res){
+        console.log(res.body.length);
         if (err) {
           return done(err);
-        } else if (res.body.length !== 3 || (_.difference(res.body, [ dir1, dir2, file1 ])).length) {
+        } else if (res.body.length !== 4) {
           return done(new Error('file list incorrect'));
         }
         return done();
