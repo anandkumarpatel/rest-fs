@@ -11,6 +11,7 @@ var async = require('async');
 var rimraf = require('rimraf');
 var walk = require('walkdir');
 var _ = require('lodash');
+var execSync = require('exec-sync');
 
 // attach the .compare method to Array's prototype to call it on any array
 Array.prototype.compare = function (array) {
@@ -102,7 +103,7 @@ function createFile(filepath, text, cb) {
 }
 
 function createSymLink(src, dst, cb) {
-  fs.symLink(src, dst, 'file', cb);
+  fs.symlink(src, dst, 'file', cb);
 }
 
 function moveDir(oldpath, newPath, doClobber, doMkdirp, cb) {
@@ -208,7 +209,6 @@ lab.experiment('create tests', function () {
     createDir(dirpath, {mode: 400}, done);
   });
 });
-
 
 lab.experiment('delete tests', function () {
   lab.beforeEach(function (done) {
@@ -391,6 +391,7 @@ lab.experiment('read tests', function () {
   var dir2 =  dir2R+'/';
   var dir1D = baseDir+'/dir1';
   var dir1 =  dir1D+'/';
+  var dir1_symlink1 = dir1+'symlink.txt';
   var file1 = baseDir+'/file1.txt';
   var dir1_file1 = dir2+'file2.txt';
   var fileContent = "test";
@@ -411,6 +412,10 @@ lab.experiment('read tests', function () {
       },
       function(cb) {
         createFile(dir1_file1, fileContent, cb);
+      },
+      function(cb) {
+        execSync('ln -s '+baseDir+'/../testfile'+' '+baseDir+'/testfile');
+        cb();
       }
     ], done);
   });
