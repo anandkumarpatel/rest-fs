@@ -1,5 +1,4 @@
 var Lab = require('lab');
-Lab.expect = require('code').expect;
 var lab = exports.lab = Lab.script();
 var fs = require('fs');
 var express = require('express');
