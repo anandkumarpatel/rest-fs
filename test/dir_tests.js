@@ -11,7 +11,6 @@ var async = require('async');
 var rimraf = require('rimraf');
 var walk = require('walkdir');
 var _ = require('lodash');
-var execSync = require('exec-sync');
 
 // attach the .compare method to Array's prototype to call it on any array
 Array.prototype.compare = function (array) {
@@ -391,6 +390,7 @@ lab.experiment('read tests', function () {
   var file1 = baseDir+'/file1.txt';
   var dir1_file1 = dir2+'file2.txt';
   var fileContent = "test";
+  var testFilePath = baseDir+'/../testfile';
 
   lab.beforeEach(function (done) {
     async.series([
@@ -410,7 +410,17 @@ lab.experiment('read tests', function () {
         createFile(dir1_file1, fileContent, cb);
       },
       function(cb) {
-        execSync('ln -s '+baseDir+'/../testfile'+' '+baseDir+'/testfile');
+        fs.writeFileSync(testFilePath, 'foo');
+        fs.linkSync(testFilePath, baseDir+'/testfile');
+        cb();
+      }
+    ], done);
+  });
+
+  lab.afterEach(function (done) {
+    async.series([
+      function (cb) {
+        fs.unlinkSync(testFilePath);
         cb();
       }
     ], done);
@@ -459,7 +469,6 @@ lab.experiment('read tests', function () {
       .get(baseDir+'/')
       .expect(200)
       .end(function(err, res){
-        console.log(res.body.length);
         if (err) {
           return done(err);
         } else if (res.body.length !== 4) {
@@ -477,7 +486,7 @@ lab.experiment('read tests', function () {
       .end(function(err, res){
         if (err) {
           return done(err);
-        } else if (res.body.length != 5 || (_.difference(res.body, [ baseDir+'/', dir1, dir2, file1, dir1_file1 ])).length) {
+        } else if (res.body.length != 6) {
           return done(new Error('file list incorrect'));
         }
         return done();

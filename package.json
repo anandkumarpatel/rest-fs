@@ -28,7 +28,6 @@
     "body-parser": "1.5.2",
     "dat-middleware": "^1.8.1",
     "debug": "^1.0.4",
-    "exec-sync": "^0.1.6",
     "express": "4.7.3",
     "express-domain-middleware": "^0.1.0",
     "findit": "^1.2.0",
