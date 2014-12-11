@@ -39,10 +39,10 @@
     "rimraf": "^2.2.8"
   },
   "devDependencies": {
-    "supertest": "*",
     "async": "*",
-    "walkdir": "*",
-    "lab": "*",
-    "lodash": "*"
+    "lab": "^4.7.0",
+    "lodash": "*",
+    "supertest": "*",
+    "walkdir": "*"
   }
 }
