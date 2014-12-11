@@ -391,6 +391,7 @@ lab.experiment('read tests', function () {
   var dir1_file1 = dir2+'file2.txt';
   var fileContent = "test";
   var testFilePath = baseDir+'/../testfile';
+  var linkTargetFile = baseDir+'/testfile';
 
   lab.beforeEach(function (done) {
     async.series([
@@ -411,7 +412,7 @@ lab.experiment('read tests', function () {
       },
       function(cb) {
         fs.writeFileSync(testFilePath, 'foo');
-        fs.linkSync(testFilePath, baseDir+'/testfile');
+        fs.linkSync(testFilePath, linkTargetFile);
         cb();
       }
     ], done);
@@ -433,9 +434,12 @@ lab.experiment('read tests', function () {
       .end(function(err, res){
         if (err) {
           return done(err);
-        } if (res.body.length !== 1 || (_.difference(res.body, [ dir1_file1 ])).length) {
+        } if (res.body.length !== 1) {
           return done(new Error('file list incorrect'));
         }
+        Lab.expect(res.body).to.deep.equal([
+          dir1_file1
+        ]);
         return done();
       });
   });
@@ -456,9 +460,12 @@ lab.experiment('read tests', function () {
       .end(function(err, res){
         if (err) {
           return done(err);
-        } if (res.body.length !== 1 || (_.difference(res.body, ['anand'])).length) {
+        } if (res.body.length !== 1) {
           return done(new Error('file list incorrect'));
         }
+        Lab.expect(res.body).to.deep.equal([
+          'anand'
+        ]);
         return done();
       });
   });
@@ -474,6 +481,9 @@ lab.experiment('read tests', function () {
         } else if (res.body.length !== 4) {
           return done(new Error('file list incorrect'));
         }
+        Lab.expect(res.body).to.deep.equal([
+          dir1, dir2, file1, linkTargetFile
+        ]);
         return done();
       });
   });
