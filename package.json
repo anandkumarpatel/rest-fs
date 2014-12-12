@@ -25,24 +25,24 @@
   },
   "homepage": "https://github.com/anandkumarpatel/rest-fs",
   "dependencies": {
-    "express": "4.7.3",
     "body-parser": "1.5.2",
-    "findit": "^1.2.0",
-    "mv": "^2.0.0",
-    "rimraf": "^2.2.8",
-    "mime": "^1.2.11",
-    "request": "^2.40.0",
     "dat-middleware": "^1.8.1",
-    "middleware-flow": "^0.5.1",
-    "morgan": "^1.2.3",
     "debug": "^1.0.4",
-    "express-domain-middleware": "^0.1.0"
+    "express": "4.7.3",
+    "express-domain-middleware": "^0.1.0",
+    "findit": "^1.2.0",
+    "middleware-flow": "^0.5.1",
+    "mime": "^1.2.11",
+    "morgan": "^1.2.3",
+    "mv": "^2.0.0",
+    "request": "^2.40.0",
+    "rimraf": "^2.2.8"
   },
   "devDependencies": {
-    "supertest": "*",
     "async": "*",
-    "walkdir": "*",
-    "lab": "*",
-    "lodash": "*"
+    "lab": "^4.7.0",
+    "lodash": "*",
+    "supertest": "*",
+    "walkdir": "*"
   }
 }

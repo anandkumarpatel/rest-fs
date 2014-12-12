@@ -205,7 +205,6 @@ lab.experiment('create tests', function () {
   });
 });
 
-
 lab.experiment('delete tests', function () {
   lab.beforeEach(function (done) {
     cleanBase(done);
@@ -387,9 +386,12 @@ lab.experiment('read tests', function () {
   var dir2 =  dir2R+'/';
   var dir1D = baseDir+'/dir1';
   var dir1 =  dir1D+'/';
+  var dir1_symlink1 = dir1+'symlink.txt';
   var file1 = baseDir+'/file1.txt';
   var dir1_file1 = dir2+'file2.txt';
   var fileContent = "test";
+  var testFilePath = baseDir+'/../testfile';
+  var linkTargetFile = baseDir+'/testfile';
 
   lab.beforeEach(function (done) {
     async.series([
@@ -407,6 +409,20 @@ lab.experiment('read tests', function () {
       },
       function(cb) {
         createFile(dir1_file1, fileContent, cb);
+      },
+      function(cb) {
+        fs.writeFileSync(testFilePath, 'foo');
+        fs.linkSync(testFilePath, linkTargetFile);
+        cb();
+      }
+    ], done);
+  });
+
+  lab.afterEach(function (done) {
+    async.series([
+      function (cb) {
+        fs.unlinkSync(testFilePath);
+        cb();
       }
     ], done);
   });
@@ -418,9 +434,12 @@ lab.experiment('read tests', function () {
       .end(function(err, res){
         if (err) {
           return done(err);
-        } if (res.body.length !== 1 || (_.difference(res.body, [ dir1_file1 ])).length) {
+        } if (res.body.length !== 1) {
           return done(new Error('file list incorrect'));
         }
+        Lab.expect(res.body).to.deep.equal([
+          dir1_file1
+        ]);
         return done();
       });
   });
@@ -441,9 +460,12 @@ lab.experiment('read tests', function () {
       .end(function(err, res){
         if (err) {
           return done(err);
-        } if (res.body.length !== 1 || (_.difference(res.body, ['anand'])).length) {
+        } if (res.body.length !== 1) {
           return done(new Error('file list incorrect'));
         }
+        Lab.expect(res.body).to.deep.equal([
+          'anand'
+        ]);
         return done();
       });
   });
@@ -456,9 +478,12 @@ lab.experiment('read tests', function () {
       .end(function(err, res){
         if (err) {
           return done(err);
-        } else if (res.body.length !== 3 || (_.difference(res.body, [ dir1, dir2, file1 ])).length) {
+        } else if (res.body.length !== 4) {
           return done(new Error('file list incorrect'));
         }
+        Lab.expect(res.body).to.deep.equal([
+          dir1, dir2, file1, linkTargetFile
+        ]);
         return done();
       });
   });
@@ -471,9 +496,12 @@ lab.experiment('read tests', function () {
       .end(function(err, res){
         if (err) {
           return done(err);
-        } else if (res.body.length != 5 || (_.difference(res.body, [ baseDir+'/', dir1, dir2, file1, dir1_file1 ])).length) {
+        } else if (res.body.length != 6) {
           return done(new Error('file list incorrect'));
         }
+        Lab.expect(res.body).to.deep.equal([
+          baseDir+'/', dir1, dir2, file1, linkTargetFile, dir2+'file2.txt'
+        ]);
         return done();
       });
   });
