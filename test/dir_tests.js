@@ -437,9 +437,7 @@ lab.experiment('read tests', function () {
         } if (res.body.length !== 1) {
           return done(new Error('file list incorrect'));
         }
-        Lab.expect(res.body).to.deep.equal([
-          dir1_file1
-        ]);
+        Lab.expect(res.body).to.contain(dir1_file1);
         return done();
       });
   });
@@ -463,13 +461,10 @@ lab.experiment('read tests', function () {
         } if (res.body.length !== 1) {
           return done(new Error('file list incorrect'));
         }
-        Lab.expect(res.body).to.deep.equal([
-          'anand'
-        ]);
+        Lab.expect(res.body).to.contain('anand');
         return done();
       });
   });
-
 
   lab.test('get filled dir ls', function (done) {
     supertest(server)
@@ -481,9 +476,10 @@ lab.experiment('read tests', function () {
         } else if (res.body.length !== 4) {
           return done(new Error('file list incorrect'));
         }
-        Lab.expect(res.body).to.deep.equal([
-          dir1, dir2, file1, linkTargetFile
-        ]);
+        Lab.expect(res.body).to.contain(dir1);
+        Lab.expect(res.body).to.contain(dir2);
+        Lab.expect(res.body).to.contain(file1);
+        Lab.expect(res.body).to.contain(linkTargetFile);
         return done();
       });
   });
@@ -499,9 +495,12 @@ lab.experiment('read tests', function () {
         } else if (res.body.length != 6) {
           return done(new Error('file list incorrect'));
         }
-        Lab.expect(res.body).to.deep.equal([
-          baseDir+'/', dir1, dir2, file1, linkTargetFile, dir2+'file2.txt'
-        ]);
+        Lab.expect(res.body).to.contain(baseDir+'/');
+        Lab.expect(res.body).to.contain(dir1);
+        Lab.expect(res.body).to.contain(dir2);
+        Lab.expect(res.body).to.contain(file1);
+        Lab.expect(res.body).to.contain(linkTargetFile);
+        Lab.expect(res.body).to.contain(dir2+'file2.txt');
         return done();
       });
   });
