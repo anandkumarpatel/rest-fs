@@ -8,7 +8,6 @@ var mw = require('dat-middleware');
 var flow = require('middleware-flow');
 var morgan = require('morgan');
 var error = require('debug')('rest-fs:error');
-error.log = console.error.bind(console);
 
 var fileserver = function(app) {
   if (!app) {
@@ -30,8 +29,12 @@ var fileserver = function(app) {
   app.delete(/^\/.+\/$/, delDir);
   app.delete(/^\/.+[^\/]$/, delFile);
   app.use(function (err, req, res, next)  {
-    error('uncaught error', err);
-    res.status(500).send(err);
+    error('uncaught error', err.stack);
+    var outErr = {
+      message: err.message,
+      stack: err.stack
+    }
+    res.status(500).send(outErr);
   });
   return app;
 };
@@ -240,7 +243,10 @@ var sendCode = function(code, req, res, next, out) {
     if (err) {
       error('ERROR', req.url, err);
       code = 500;
-      out = err;
+      out = {
+        message: err.message,
+        stack: err.stack
+      };
 
       if (err.code === 'ENOENT') {
         code = 404;
