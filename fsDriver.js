@@ -5,6 +5,7 @@ var findit = require('findit');
 var path = require('path');
 var mv = require('mv');
 var rm = require('rimraf');
+var error = require('debug')('rest-fs:fsDriver');
 
 // returns array of files and dir. trailing slash determines type.
 var listAll = function(reqDir, cb) {
@@ -38,12 +39,15 @@ var list = function(reqDir, cb) {
       return function (err, stat) {
         // here we do something special. if stat failes we know that there is something here
         // but we might not have permissons. show it as a file.
-        var isDir = false;
-        if (!err) {
-          isDir = stat.isDirectory() ? '/' : '';
+        if (err) {
+          error('lstat error', err.stack);
         }
-        var file = path.join(reqDir, files[index], isDir);
-        filesList.push(file);
+        else {
+          var isDir = stat.isDirectory() ? '/' : '';
+          var file = path.join(reqDir, files[index], isDir);
+          filesList.push(file);
+        }
+
         cnt++;
         if (cnt === files.length) {
           return cb(null, filesList);

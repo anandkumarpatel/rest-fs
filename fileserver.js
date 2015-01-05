@@ -7,7 +7,7 @@ var path = require('path');
 var mw = require('dat-middleware');
 var flow = require('middleware-flow');
 var morgan = require('morgan');
-var error = require('debug')('rest-fs:error');
+var error = require('debug')('rest-fs:fileserver');
 
 var fileserver = function(app) {
   if (!app) {
@@ -33,7 +33,7 @@ var fileserver = function(app) {
     var outErr = {
       message: err.message,
       stack: err.stack
-    }
+    };
     res.status(500).send(outErr);
   });
   return app;
