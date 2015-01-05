@@ -244,6 +244,9 @@ var sendCode = function(code, req, res, next, out) {
       error('ERROR', req.url, err);
       code = 500;
       out = {
+        errno: err.errno,
+        code: err.code,
+        path: err.path,
         message: err.message,
         stack: err.stack
       };
