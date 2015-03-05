@@ -54,6 +54,10 @@ var fileserver = function(app) {
   ]
 */
 var getDir = function (req, res, next) {
+  if (req.query.stat) {
+    return statFile(req, res, next);
+  }
+
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isRecursive = req.query.recursive || "false";
 
@@ -94,6 +98,10 @@ var getDir = function (req, res, next) {
   res.body = {"content of specified file"}
 */
 var getFile = function (req, res, next) {
+  if (req.query.stat) {
+    return statFile(req, res, next);
+  }
+
   var filePath = decodeURI(url.parse(req.url).pathname);
   var encoding = req.query.encoding || 'utf8';
   fileDriver.readFile(filePath, encoding, function(err, data) {
@@ -227,6 +235,36 @@ var delFile = function (req, res, next) {
   fileDriver.unlink(dirPath, sendCode(200, req, res, next, {}));
 };
 
+/* HEAD
+  /path/to/dir/or/file
+  Returns stats for a file
+
+  return: stats for the file as determined by node
+  res.body = { 
+    dev: 16777220,
+    mode: 16877,
+    nlink: 31,
+    uid: 501,
+    gid: 20,
+    rdev: 0,
+    blksize: 4096,
+    ino: 604862,
+    size: 1054,
+    blocks: 0,
+    atime: Thu Mar 05 2015 11:38:47 GMT-0800 (PST),
+    mtime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
+    ctime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
+    birthtime: Mon Mar 02 2015 10:55:37 GMT-0800 (PST) 
+  }
+*/
+var statFile = function (req, res, next) {
+  var filePath = decodeURI(url.parse(req.url).pathname);
+  fileDriver.stat(filePath, function(err, stats) {
+    if (err) { return responseError(req, res, next, err); }
+    res.status(200).json(stats);
+  });
+}
+
 // Helpers
 
 // formats out data based on client spec.
@@ -238,32 +276,36 @@ var formatOutData = function (req, filepath) {
   return out;
 };
 
+var responseError = function(req, res, next, err) {
+  error('ERROR', req.url, err);
+  code = 500;
+  out = {
+    errno: err.errno,
+    code: err.code,
+    path: err.path,
+    message: err.message,
+    stack: err.stack
+  };
+
+  if (err.code === 'ENOENT') {
+    code = 404;
+  } if (err.code === 'EPERM') {
+    code = 403;
+  } if (err.code === 'ENOTDIR' ||
+        err.code === 'EISDIR') {
+    code = 400;
+  } if (err.code === 'ENOTEMPTY' ||
+        err.code === 'EEXIST' ||
+        err.code === 'EINVAL') {
+    code = 409;
+  }
+
+  res.status(code).send(out);
+}
+
 var sendCode = function(code, req, res, next, out) {
   return function (err) {
-    if (err) {
-      error('ERROR', req.url, err);
-      code = 500;
-      out = {
-        errno: err.errno,
-        code: err.code,
-        path: err.path,
-        message: err.message,
-        stack: err.stack
-      };
-
-      if (err.code === 'ENOENT') {
-        code = 404;
-      } if (err.code === 'EPERM') {
-        code = 403;
-      } if (err.code === 'ENOTDIR' ||
-            err.code === 'EISDIR') {
-        code = 400;
-      } if (err.code === 'ENOTEMPTY' ||
-            err.code === 'EEXIST' ||
-            err.code === 'EINVAL') {
-        code = 409;
-      }
-    }
+    if (err) { return responseError(req, res, next, err); }
     res.status(code).send(out);
   };
 };

@@ -145,6 +145,16 @@ var move = function (oldPath, newPath, opts, cb) {
   });
 };
 
+/*
+  stat a file
+*/
+var stat = function (path, cb) {
+  fs.stat(path, function(err, stats) {
+    if (err) { return cb(err); }
+    cb(null, stats);
+  })
+}
+
 module.exports.listAll = listAll;
 module.exports.list = list;
 module.exports.readFile = readFile;
@@ -154,3 +164,4 @@ module.exports.writeFile = writeFile;
 module.exports.unlink = unlink;
 module.exports.move = move;
 module.exports.writeFileStream = writeFileStream;
+module.exports.stat = stat;

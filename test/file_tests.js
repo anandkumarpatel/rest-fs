@@ -261,6 +261,7 @@ function rmFile(path, cb) {
           });
       });
 }
+
 lab.experiment('basic delete tests', function () {
   lab.beforeEach(function (done) {
     cleanBase(done);
@@ -313,6 +314,11 @@ lab.experiment('read tests', function () {
   var file1path = baseFolder+'/test_file1.txt';
   var file2path = baseFolder+'/test_file2.txt';
   var fileContent = "test";
+  var expectedStatKeys = [
+    'dev', 'mode', 'nlink', 'uid', 'gid',
+    'rdev', 'blksize', 'ino', 'size', 'blocks',
+    'atime', 'mtime', 'ctime', 'birthtime'
+  ];
 
   lab.before(function (done) {
     async.series([
@@ -412,6 +418,32 @@ lab.experiment('read tests', function () {
         return done();
       });
   });
+
+  lab.test('get stats for a file', function(done) {
+    supertest(server)
+      .get(file2path+'?stat=1')
+      .expect(200)
+      .end(function(err, res) {
+        if (err) { return done(err); }
+        expectedStatKeys.forEach(function(key) {
+          Lab.expect(res.body).to.have.property(key);
+        });
+        done();
+      });
+  });
+
+  lab.test('get stats for a directory', function(done) {
+    supertest(server)
+      .get(baseFolder+'?stat=1')
+      .expect(200)
+      .end(function(err, res) {
+        if (err) { return done(err); }
+        expectedStatKeys.forEach(function(key) {
+          Lab.expect(res.body).to.have.property(key);
+        });
+        done();
+      });
+  })
 });
 
 lab.experiment('move tests', function () {
