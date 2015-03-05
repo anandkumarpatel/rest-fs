@@ -235,7 +235,7 @@ var delFile = function (req, res, next) {
   fileDriver.unlink(dirPath, sendCode(200, req, res, next, {}));
 };
 
-/* HEAD
+/* GET
   /path/to/dir/or/file
   Returns stats for a file
 
