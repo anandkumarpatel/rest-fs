@@ -14,6 +14,7 @@ var fileserver = function(app) {
     throw new Error('express app required');
   }
 
+  app.set('etag', 'strong');
   app.use(require('express-domain-middleware'));
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({
