@@ -434,7 +434,7 @@ lab.experiment('read tests', function () {
 
   lab.test('get stats for a directory', function(done) {
     supertest(server)
-      .get(baseFolder+'?stat=1')
+      .get(baseFolder+'/?stat=1')
       .expect(200)
       .end(function(err, res) {
         if (err) { return done(err); }
