@@ -444,6 +444,17 @@ lab.experiment('read tests', function () {
         done();
       });
   })
+
+  lab.test('gets have etags', function(done) {
+    supertest(server)
+      .get(file2path)
+      .expect(200)
+      .end(function(err, res) {
+        if (err) { done(err); }
+        Lab.expect(res.headers).to.have.property('etag');
+        done();
+      });
+  });
 });
 
 lab.experiment('move tests', function () {
