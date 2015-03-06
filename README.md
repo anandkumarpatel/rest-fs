@@ -37,8 +37,8 @@ To use programmatically, pass in the app into restfs and it will add the routes.
 you can attach a function to modifyOut to manipulate file output.
 the function has one argument which is the full filepath and should return path to return
 
-ETags
-===
+## ETags
+
 
 rest-fs supports ETags by default. Each api endpoint will return a *strict* `ETag` header
 that clients can utilize when making subsequent requests. Please see
