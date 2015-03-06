@@ -14,6 +14,7 @@ var fileserver = function(app) {
     throw new Error('express app required');
   }
 
+  app.set('etag', 'strong');
   app.use(require('express-domain-middleware'));
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({
@@ -54,6 +55,10 @@ var fileserver = function(app) {
   ]
 */
 var getDir = function (req, res, next) {
+  if (req.query.stat) {
+    return statFile(req, res, next);
+  }
+
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isRecursive = req.query.recursive || "false";
 
@@ -94,6 +99,10 @@ var getDir = function (req, res, next) {
   res.body = {"content of specified file"}
 */
 var getFile = function (req, res, next) {
+  if (req.query.stat) {
+    return statFile(req, res, next);
+  }
+
   var filePath = decodeURI(url.parse(req.url).pathname);
   var encoding = req.query.encoding || 'utf8';
   fileDriver.readFile(filePath, encoding, function(err, data) {
@@ -226,6 +235,35 @@ var delFile = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   fileDriver.unlink(dirPath, sendCode(200, req, res, next, {}));
 };
+
+/* GET
+  /path/to/dir/or/file
+  Returns stats for a file
+
+  return: stats for the file as determined by node
+  res.body = { 
+    dev: 16777220,
+    mode: 16877,
+    nlink: 31,
+    uid: 501,
+    gid: 20,
+    rdev: 0,
+    blksize: 4096,
+    ino: 604862,
+    size: 1054,
+    blocks: 0,
+    atime: Thu Mar 05 2015 11:38:47 GMT-0800 (PST),
+    mtime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
+    ctime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
+    birthtime: Mon Mar 02 2015 10:55:37 GMT-0800 (PST) 
+  }
+*/
+var statFile = function (req, res, next) {
+  var filePath = decodeURI(url.parse(req.url).pathname);
+  fileDriver.stat(filePath, function(err, stats) {
+    sendCode(200, req, res, next, stats)(err);
+  });
+}
 
 // Helpers
 
