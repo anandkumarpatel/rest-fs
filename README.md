@@ -62,7 +62,7 @@ GET /path/to/dir/
   res.body = [ { "fullDirPath" }, ... ]
   ```
 
-### File Stats
+#### File Stats
   ?stats = Return file stats for the directory instead of file listing.
   returns: File stats for the given directory
 
@@ -96,7 +96,7 @@ GET /path/to/file
   returns:
   res.body = { "file content" }
 
-### File Stats
+#### File Stats
   ?stats = Return file stats for the file instead of file's contents.
   returns: File stats for the given directory
 
