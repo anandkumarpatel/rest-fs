@@ -64,7 +64,6 @@ GET /path/to/dir/
 
 #### File Stats
   ?stats = Return file stats for the directory instead of file listing.
-  returns: File stats for the given directory
 
   ```
   res.body = {
@@ -98,7 +97,6 @@ GET /path/to/file
 
 #### File Stats
   ?stats = Return file stats for the file instead of file's contents.
-  returns: File stats for the given directory
 
   ```
   res.body = {
