@@ -79,8 +79,7 @@ GET /path/to/dir/
     blocks: 0,
     atime: Thu Mar 05 2015 11:38:47 GMT-0800 (PST),
     mtime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
-    ctime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
-    birthtime: Mon Mar 02 2015 10:55:37 GMT-0800 (PST)
+    ctime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST)
   }
   ```
 
@@ -112,8 +111,7 @@ GET /path/to/file
     blocks: 0,
     atime: Thu Mar 05 2015 11:38:47 GMT-0800 (PST),
     mtime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
-    ctime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
-    birthtime: Mon Mar 02 2015 10:55:37 GMT-0800 (PST)
+    ctime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST)
   }
   ```
 
