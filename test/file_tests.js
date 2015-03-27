@@ -317,7 +317,7 @@ lab.experiment('read tests', function () {
   var expectedStatKeys = [
     'dev', 'mode', 'nlink', 'uid', 'gid',
     'rdev', 'blksize', 'ino', 'size', 'blocks',
-    'atime', 'mtime', 'ctime', 'birthtime'
+    'atime', 'mtime', 'ctime'
   ];
 
   lab.before(function (done) {
