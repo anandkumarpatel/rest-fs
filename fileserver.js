@@ -141,7 +141,7 @@ var getFile = function (req, res, next) {
 */
 var postFileOrDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  var isDir = dirPath.substr(-1) == '/';
+  var isDir = dirPath.substr(-1) === '/';
   var options = {};
   var isJson = false;
   if (typeof req.headers['content-type'] === 'string') {
@@ -151,8 +151,12 @@ var postFileOrDir = function (req, res, next) {
   if (req.body.newPath) {
     options.clobber = req.body.clobber || false;
     options.mkdirp = req.body.mkdirp || false;
-    return fileDriver.move(dirPath, req.body.newPath, options,
-      sendCode(200, req, res, next, formatOutData(req, req.body.newPath)));
+    var newPath = req.body.newPath;
+    if (isDir && newPath.substr(-1) !== '/') {
+      newPath = newPath + '/';
+    }
+    return fileDriver.move(dirPath, newPath, options,
+      sendCode(200, req, res, next, formatOutData(req, newPath)));
   }
 
   if (isDir) {
@@ -193,7 +197,7 @@ var postFileOrDir = function (req, res, next) {
 */
 var putFileOrDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  var isDir = dirPath.substr(-1) == '/';
+  var isDir = dirPath.substr(-1) === '/';
   var options = {};
 
   if (isDir) {
@@ -241,7 +245,7 @@ var delFile = function (req, res, next) {
   Returns stats for a file
 
   return: stats for the file as determined by node
-  res.body = { 
+  res.body = {
     dev: 16777220,
     mode: 16877,
     nlink: 31,
@@ -255,7 +259,7 @@ var delFile = function (req, res, next) {
     atime: Thu Mar 05 2015 11:38:47 GMT-0800 (PST),
     mtime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
     ctime: Thu Mar 05 2015 10:52:41 GMT-0800 (PST),
-    birthtime: Mon Mar 02 2015 10:55:37 GMT-0800 (PST) 
+    birthtime: Mon Mar 02 2015 10:55:37 GMT-0800 (PST)
   }
 */
 var statFile = function (req, res, next) {
