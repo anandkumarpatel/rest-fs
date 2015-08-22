@@ -442,6 +442,29 @@ lab.experiment('read tests', function () {
       });
   });
 
+  lab.test('get root dir ls', function (done) {
+    supertest(server)
+      .get('/')
+      .expect(200)
+      .end(function(err, res){
+        if (err) {
+          return done(err);
+        }
+        if (res.body.length < 1) {
+          return done(new Error('file list incorrect'));
+        }
+        res.body.forEach(function(f){
+          var stats = fs.statSync(f);
+          if (f.charAt(f.length-1)==='/') {
+            Lab.expect(stats.isDirectory()).to.be.ok();
+          } else {
+            Lab.expect(stats.isDirectory()).to.not.be.ok();
+          }
+        });
+        return done();
+      });
+  });
+
   lab.test('test setModifyOut', function (done) {
     var server2 = express();
     server2.use(function(req, res, next) {
