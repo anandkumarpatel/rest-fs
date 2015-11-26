@@ -8,8 +8,9 @@ var rm = require('rimraf');
 var error = require('debug')('rest-fs:fsDriver');
 
 // returns array of files and dir. trailing slash determines type.
-var listAll = function(reqDir, cb) {
-  var finder = findit(reqDir);
+var listAll = function(args, cb) {
+  var dirPath = args.dirPath;
+  var finder = findit(dirPath);
   var files = [];
 
   finder.on('directory', function (dir, stat, stop) {
@@ -26,10 +27,11 @@ var listAll = function(reqDir, cb) {
 };
 
 // returns array of files and dir. trailing slash determines type.
-var list = function(reqDir, cb) {
+var list = function(args, cb) {
+  var dirPath = args.dirPath;
   var filesList = [];
   var cnt = 0;
-  fs.readdir(reqDir, function (err, files) {
+  fs.readdir(dirPath, function (err, files) {
     if (err) { return cb(err); }
 
     if (files.length === 0) {
@@ -44,7 +46,7 @@ var list = function(reqDir, cb) {
         }
         else {
           var isDir = stat.isDirectory() ? '/' : '';
-          var file = path.join(reqDir, files[index], isDir);
+          var file = path.join(dirPath, files[index], isDir);
           filesList.push(file);
         }
 
@@ -55,7 +57,7 @@ var list = function(reqDir, cb) {
       };
     };
     for (var i = 0; i < files.length; i++) {
-      fs.lstat(path.join(reqDir, files[i]), formatFileList(i));
+      fs.lstat(path.join(dirPath, files[i]), formatFileList(i));
     }
   });
 };
@@ -63,21 +65,30 @@ var list = function(reqDir, cb) {
 /*
   read file from filepath
 */
-var readFile = function(filePath, encoding, cb) {
+var readFile = function(args, cb) {
+  var filePath = args.filePath;
+  var encoding = args.encoding;
+
   fs.readFile(filePath, encoding, cb);
 };
 
 /*
   mkdir
 */
-var mkdir = function(dirPath, mode, cb)  {
+var mkdir = function(args, cb)  {
+  var dirPath = args.dirPath;
+  var mode = args.mode;
+
   fs.mkdir(dirPath, mode, cb);
 };
 
 /*
   delete directory
 */
-var rmdir = function(dirPath, clobber, cb)  {
+var rmdir = function(args, cb)  {
+  var dirPath = args.dirPath;
+  var clobber = args.clobber;
+
   if (clobber) {
     return rm(dirPath, cb);
   }
@@ -87,15 +98,23 @@ var rmdir = function(dirPath, clobber, cb)  {
 /*
   writeFile
 */
-var writeFile = function(filename, data, options, cb)  {
-  fs.writeFile(filename, data, options, cb);
+var writeFile = function(args, cb)  {
+  var dirPath = args.dirPath;
+  var data = args.data;
+  var options = args.options;
+  console.log('XXX', args)
+  fs.writeFile(dirPath, data, options, cb);
 };
 
 /*
   write file with stream
 */
-var writeFileStream = function(filepath, stream, options, cb)  {
-  var file = fs.createWriteStream(filepath, options);
+var writeFileStream = function(args, cb)  {
+  var dirPath = args.dirPath;
+  var stream = args.stream;
+  var options = args.options;
+  var file = fs.createWriteStream(dirPath, options);
+
   file.on('error', cb);
   file.on('finish', function() {
     cb();
@@ -106,14 +125,19 @@ var writeFileStream = function(filepath, stream, options, cb)  {
 /*
   delete file
 */
-var unlink = function(filename, cb)  {
-  fs.unlink(filename, cb);
+var unlink = function(args, cb)  {
+  var dirPath = args.dirPath;
+
+  fs.unlink(dirPath, cb);
 };
 
 /*
   move file
 */
-var move = function (oldPath, newPath, opts, cb) {
+var move = function (args, cb) {
+  var oldPath = args.dirPath;
+  var newPath = args.newPath;
+  var opts = args.options;
   // have to remove trailing slaches
   if(oldPath.substr(-1) == '/') {
     oldPath = oldPath.substr(0, oldPath.length - 1);
@@ -148,12 +172,14 @@ var move = function (oldPath, newPath, opts, cb) {
 /*
   stat a file
 */
-var stat = function (path, cb) {
+var stat = function (args, cb) {
+  var path = args.filePath;
+
   fs.stat(path, function(err, stats) {
     if (err) { return cb(err); }
     cb(null, stats);
-  })
-}
+  });
+};
 
 module.exports.listAll = listAll;
 module.exports.list = list;
