@@ -102,7 +102,7 @@ var writeFile = function(args, cb)  {
   var dirPath = args.dirPath;
   var data = args.data;
   var options = args.options;
-  console.log('XXX', args)
+
   fs.writeFile(dirPath, data, options, cb);
 };
 
