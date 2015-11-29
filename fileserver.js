@@ -23,7 +23,7 @@ var fileserver = function(app) {
   app.use(morgan('combined', {
     skip: function () { return process.env.LOG !== 'true'; }
   }));
-  app.get(/^\/.+\/$/, getDir);
+  app.get(/^\/(.+\/)?$/, getDir);
   app.get(/^\/.+[^\/]$/, getFile);
   app.post("/*", postFileOrDir);
   app.put("/*", putFileOrDir);
