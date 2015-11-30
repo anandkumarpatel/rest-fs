@@ -453,15 +453,9 @@ lab.experiment('read tests', function () {
         if (res.body.length < 1) {
           return done(new Error('file list incorrect'));
         }
-        res.body.forEach(function(f){
-          var stats = fs.statSync(f);
-          if (f.charAt(f.length-1)==='/') {
-            Lab.expect(stats.isDirectory()).to.be.ok();
-          } else {
-            Lab.expect(stats.isDirectory()).to.not.be.ok();
-          }
-        });
-        return done();
+
+        Lab.expect(res.body).to.exist();
+        done();
       });
   });
 
