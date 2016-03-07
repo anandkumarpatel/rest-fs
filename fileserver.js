@@ -61,7 +61,7 @@ var getDir = function (req, res, next) {
 
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isRecursive = req.query.recursive || "false";
-  var opts = req.body.opts;
+  var driverOpts = req.body.driverOpts;
 
   var handList = function (err, files) {
     if (err && err.code === 'ENOTDIR') {
@@ -84,12 +84,12 @@ var getDir = function (req, res, next) {
   if (isRecursive === "true") {
     return fileDriver.listAll({
       dirPath: dirPath,
-      opts: opts
+      driverOpts: driverOpts
     }, handList);
   } else {
     return fileDriver.list({
       dirPath: dirPath,
-      opts: opts
+      driverOpts: driverOpts
     }, handList);
   }
 };
@@ -112,12 +112,12 @@ var getFile = function (req, res, next) {
 
   var filePath = decodeURI(url.parse(req.url).pathname);
   var encoding = req.query.encoding || 'utf8';
-  var opts = req.body.opts;
+  var driverOpts = req.body.driverOpts;
 
   fileDriver.readFile({
     filePath: filePath,
     encoding: encoding,
-    opts: opts
+    driverOpts: driverOpts
   }, function(err, data) {
     if (err && err.code === 'EISDIR') {
       // this this is a dir, redirect to dir path
@@ -157,7 +157,7 @@ var postFileOrDir = function (req, res, next) {
   var isDir = dirPath.substr(-1) === '/';
   var options = {};
   var isJson = false;
-  var opts = req.body.opts;
+  var driverOpts = req.body.driverOpts;
 
   if (typeof req.headers['content-type'] === 'string') {
     isJson = ~req.headers['content-type'].indexOf('application/json') === -1 ? true : false;
@@ -174,7 +174,7 @@ var postFileOrDir = function (req, res, next) {
       dirPath: dirPath,
       newPath: newPath,
       options: options,
-      opts: opts
+      driverOpts: driverOpts
     }, sendCode(200, req, res, next, formatOutData(req, newPath)));
   }
 
@@ -183,7 +183,7 @@ var postFileOrDir = function (req, res, next) {
     return fileDriver.mkdir({
       dirPath: dirPath,
       mode: mode,
-      opts: opts
+      driverOpts: driverOpts
     }, sendCode(201, req, res, next, formatOutData(req, dirPath)));
   }
 
@@ -197,7 +197,7 @@ var postFileOrDir = function (req, res, next) {
       dirPath: dirPath,
       stream: req,
       options: options,
-      opts: opts
+      driverOpts: driverOpts
     }, sendCode(201, req, res, next, formatOutData(req, dirPath)));
   }
 
@@ -208,7 +208,7 @@ var postFileOrDir = function (req, res, next) {
     dirPath: dirPath,
     data: data,
     options: options,
-    opts: opts
+    driverOpts: driverOpts
   }, sendCode(201, req, res, next, formatOutData(req, dirPath)));
 };
 
@@ -229,14 +229,14 @@ var putFileOrDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isDir = dirPath.substr(-1) === '/';
   var options = {};
-  var opts = req.body.opts;
+  var driverOpts = req.body.driverOpts;
 
   if (isDir) {
     var mode = req.body.mode || 511;
     fileDriver.mkdir({
       dirPath: dirPath,
       mode: mode,
-      opts: opts
+      driverOpts: driverOpts
     }, sendCode(201, req, res, next, formatOutData(req, dirPath)));
   } else {
     options.encoding = req.body.encoding  || 'utf8';
@@ -246,7 +246,7 @@ var putFileOrDir = function (req, res, next) {
       dirPath: dirPath,
       data: data,
       options: options,
-      opts: opts
+      driverOpts: driverOpts
     }, sendCode(201, req, res, next, formatOutData(req, dirPath)));
   }
 };
@@ -263,12 +263,12 @@ var putFileOrDir = function (req, res, next) {
 var delDir = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var clobber = req.body.clobber  || false;
-  var opts = req.body.opts;
+  var driverOpts = req.body.driverOpts;
 
   fileDriver.rmdir({
     dirPath: dirPath,
     clobber: clobber,
-    opts: opts
+    driverOpts: driverOpts
   }, sendCode(200, req, res, next, {}));
 };
 
@@ -281,11 +281,11 @@ var delDir = function (req, res, next) {
 */
 var delFile = function (req, res, next) {
   var dirPath =  decodeURI(url.parse(req.url).pathname);
-  var opts = req.body.opts;
+  var driverOpts = req.body.driverOpts;
 
   fileDriver.unlink({
     dirPath: dirPath,
-    opts: opts
+    driverOpts: driverOpts
   }, sendCode(200, req, res, next, {}));
 };
 
@@ -313,11 +313,11 @@ var delFile = function (req, res, next) {
 */
 var statFile = function (req, res, next) {
   var filePath = decodeURI(url.parse(req.url).pathname);
-  var opts = req.body.opts;
+  var driverOpts = req.body.driverOpts;
 
   fileDriver.stat({
     filePath: filePath,
-    opts: opts
+    driverOpts: driverOpts
   }, function(err, stats) {
     sendCode(200, req, res, next, stats)(err);
   });
