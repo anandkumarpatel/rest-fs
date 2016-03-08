@@ -1,6 +1,6 @@
 // fileserver
 var bodyParser = require('body-parser');
-var fileDriver = require('./fsDriver.js');
+var fileDriver = require('./dockerDriver.js');
 var url = require('url');
 var mime = require('mime');
 var path = require('path');
@@ -81,17 +81,10 @@ var getDir = function (req, res, next) {
     sendCode(200, req, res, next, files)(err);
   };
 
-  if (isRecursive === "true") {
-    return fileDriver.listAll({
-      dirPath: dirPath,
-      driverOpts: driverOpts
-    }, handList);
-  } else {
-    return fileDriver.list({
-      dirPath: dirPath,
-      driverOpts: driverOpts
-    }, handList);
-  }
+  return fileDriver.list({
+    dirPath: dirPath,
+    driverOpts: driverOpts
+  }, handList);
 };
 
 /* GET
@@ -119,6 +112,7 @@ var getFile = function (req, res, next) {
     encoding: encoding,
     driverOpts: driverOpts
   }, function(err, data) {
+    // TODO: implement in docker driver
     if (err && err.code === 'EISDIR') {
       // this this is a dir, redirect to dir path
       var originalUrl = url.parse(req.originalUrl);

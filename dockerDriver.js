@@ -1,46 +1,43 @@
-// fsDriver
-// use fs engine to server files
-var fs = require('fs');
-var path = require('path');
-var mv = require('mv');
-var rm = require('rimraf');
-var error = require('debug')('rest-fs:fsDriver');
+// dockerriver
+// use docker exec to server files
+var fs = require('fs')
+var path = require('path')
+var isString = require('101/is-string')
+var Docker = require('./docker')
+var createStreamCleanser = require('docker-stream-cleanser')
+var error = require('debug')('rest-fs:dockerDriver')
+var miss = require('mississippi')
 
+function buff2String () {
+  return miss.through({ objectMode: true }, function transform (chunk, enc, cb) {
+    if (chunk) {
+      this.push(chunk.toString())
+    }
+    cb()
+  })
+}
 
 // returns array of files and dir. trailing slash determines type.
 var list = function(args, cb) {
-  var dirPath = args.dirPath;
-  var filesList = [];
-  var cnt = 0;
-  fs.readdir(dirPath, function (err, files) {
-    if (err) { return cb(err); }
-
-    if (files.length === 0) {
-      return cb(null, []);
-    }
-    var formatFileList = function(index) {
-      return function (err, stat) {
-        // here we do something special. if stat failes we know that there is something here
-        // but we might not have permissons. show it as a file.
-        if (err) {
-          error('lstat error', err.stack);
-        }
-        else {
-          var isDir = stat.isDirectory() ? '/' : '';
-          var file = path.join(dirPath, files[index], isDir);
-          filesList.push(file);
-        }
-
-        cnt++;
-        if (cnt === files.length) {
-          return cb(null, filesList);
-        }
-      };
-    };
-    for (var i = 0; i < files.length; i++) {
-      fs.lstat(path.join(dirPath, files[i]), formatFileList(i));
-    }
-  });
+  var dirPath = args.dirPath
+  console.log('dirpath!!!', dirPath)
+  var docker = new Docker()
+  docker.execContainer('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', ['ls', '-F', dirPath], function (err, execStream) {
+    var streamCleanser = createStreamCleanser()
+    var filesList = []
+    var concatStream = miss.concat(function (result) {
+      if (result && isString(result)) {
+        var files = result.split('\n')
+        files = files.filter(function (f) {
+          return f.length > 0
+        })
+        filesList = files
+      }
+    })
+    miss.pipe(execStream, streamCleanser, buff2String(), concatStream, function (err) {
+      cb(err, filesList)
+    })
+  })
 };
 
 /*
@@ -50,7 +47,17 @@ var readFile = function(args, cb) {
   var filePath = args.filePath;
   var encoding = args.encoding;
 
-  fs.readFile(filePath, encoding, cb);
+  var docker = new Docker()
+  docker.execContainer('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', ['cat', filePath], function (err, execStream) {
+    var streamCleanser = createStreamCleanser()
+    var response
+    var concatStream = miss.concat(function (result) {
+      response = result
+    })
+    miss.pipe(execStream, streamCleanser, buff2String(), concatStream, function (err) {
+      cb(err, response)
+    })
+  })
 };
 
 /*
