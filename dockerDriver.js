@@ -38,17 +38,18 @@ var list = function(args, cb) {
   var dirPath = args.dirPath
   var command = ['ls', '-F', dirPath]
   execCommand('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, resp) {
-    if(err) {
+    if (err) {
       return cb(err)
     }
-    var filesList = []
-    if (resp && isString(resp)) {
-      var files = resp.split('\n')
-      files = files.filter(function (f) {
-        return f.length > 0
-      })
-      filesList = files
+    if (resp.toLowerCase().indexOf('no such file or directory') >= 0) {
+      var notFound = new Error('Not found')
+      notFound.code = 'ENOTDIR'
+      return cb(notFound)
     }
+    var filesList = resp.split('\n')
+    filesList = files.filter(function (f) {
+      return f.length > 0
+    })
     cb(null, filesList)
   })
 };
@@ -106,7 +107,12 @@ var rmdir = function(args, cb)  {
     if (err) {
       return cb(err)
     }
-    cb(err, resp)
+    if (resp.toLowerCase().indexOf('no such file or directory') >=0) {
+      var notFound = new Error('Not found')
+      notFound.code = 'ENOENT'
+      return cb(notFound)
+    }
+    cb(null, resp)
   })
 };
 
@@ -157,7 +163,17 @@ var unlink = function(args, cb)  {
     if (err) {
       return cb(err)
     }
-    cb(err, resp)
+    if (resp.toLowerCase().indexOf('no such file or directory') >= 0) {
+      var notFound = new Error('Not found')
+      notFound.code = 'ENOENT'
+      return cb(notFound)
+    }
+    if (resp.length > 0) {
+      var error = new Error('Deletion error found')
+      error.message = response
+      return cb(error)
+    }
+    cb(null, resp)
   })
 };
 

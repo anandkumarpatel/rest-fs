@@ -74,16 +74,12 @@ Docker.prototype.execContainer = function (containerId, command, cb) {
     .getContainer(containerId)
     .exec(options, function (err, exec) {
       if (err) {
-        console.log('errorr', err)
-        return
+        return cb(err)
       }
-      console.log('success')
       exec.start({ stdin: true }, function (startErr, stream) {
         if (startErr) {
-          console.log('start error', startErr)
-          return
+          return cb(startErr)
         }
-        console.log('start success')
         cb(null, stream)
       })
     })
