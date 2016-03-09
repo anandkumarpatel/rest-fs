@@ -147,15 +147,17 @@ var getFile = function (req, res, next) {
   }
 */
 var postFileOrDir = function (req, res, next) {
+  console.log('postFileOrDir1')
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isDir = dirPath.substr(-1) === '/';
   var options = {};
   var isJson = false;
   var driverOpts = req.body.driverOpts;
-
+  console.log('postFileOrDir2', dirPath, isDir)
   if (typeof req.headers['content-type'] === 'string') {
     isJson = ~req.headers['content-type'].indexOf('application/json') === -1 ? true : false;
   }
+  console.log('postFileOrDir3', dirPath, isJson)
   // move/rename if newPath exists
   if (req.body.newPath) {
     options.clobber = req.body.clobber || false;
@@ -173,6 +175,7 @@ var postFileOrDir = function (req, res, next) {
   }
 
   if (isDir) {
+    console.log('postFileOrDir2', dirPath, isDir)
     var mode = req.body.mode || 511;
     return fileDriver.mkdir({
       dirPath: dirPath,
@@ -194,7 +197,7 @@ var postFileOrDir = function (req, res, next) {
       driverOpts: driverOpts
     }, sendCode(201, req, res, next, formatOutData(req, dirPath)));
   }
-
+  console.log('writing file')
   options.encoding = req.body.encoding  || 'utf8';
   options.mode = req.body.mode || 438;
   var data = req.body.content || '';

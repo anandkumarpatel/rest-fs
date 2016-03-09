@@ -64,10 +64,23 @@ var readFile = function(args, cb) {
   mkdir
 */
 var mkdir = function(args, cb)  {
-  var dirPath = args.dirPath;
-  var mode = args.mode;
-
-  fs.mkdir(dirPath, mode, cb);
+  var dirPath = args.dirPath
+  var mode = args.mode
+  console.log('mkdir', dirPath, mode)
+  var docker = new Docker()
+  var command = ['/bin/bash', '-c', 'mkdir -m ' + mode + ' -p ' + dirPath]
+  docker.execContainer('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, execStream) {
+    console.log('aaaaa', err, execStream)
+    var streamCleanser = createStreamCleanser()
+    var response
+    var concatStream = miss.concat(function (result) {
+      response = result
+    })
+    miss.pipe(execStream, streamCleanser, buff2String(), concatStream, function (err) {
+      console.log('create dir', err, response)
+      cb(err, response)
+    })
+  })
 };
 
 /*
@@ -77,21 +90,50 @@ var rmdir = function(args, cb)  {
   var dirPath = args.dirPath;
   var clobber = args.clobber;
 
+  var docker = new Docker()
+  var command = ['rm', '-fd', dirPath]
   if (clobber) {
-    return rm(dirPath, cb);
+    command = ['rm', '-fdr', dirPath]
   }
-  return fs.rmdir(dirPath, cb);
+  docker.execContainer('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, execStream) {
+    console.log('aaaaa', err, execStream)
+    var streamCleanser = createStreamCleanser()
+    var response
+    var concatStream = miss.concat(function (result) {
+      response = result
+    })
+    miss.pipe(execStream, streamCleanser, buff2String(), concatStream, function (err) {
+      console.log('delete dir', err, response)
+      cb(err, response)
+    })
+  })
 };
 
 /*
   writeFile
 */
 var writeFile = function(args, cb)  {
-  var dirPath = args.dirPath;
-  var data = args.data;
-  var options = args.options;
+  var dirPath = args.dirPath
+  var data = args.data
+  var options = args.options
 
-  fs.writeFile(dirPath, data, options, cb);
+  var dirPath = args.dirPath
+  var mode = args.mode
+  console.log('create file', dirPath, mode)
+  var docker = new Docker()
+  var command = ['/bin/bash', '-c', 'echo "' + data + '" > ' + dirPath]
+  docker.execContainer('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, execStream) {
+    console.log('aaaaa', err, execStream)
+    var streamCleanser = createStreamCleanser()
+    var response
+    var concatStream = miss.concat(function (result) {
+      response = result
+    })
+    miss.pipe(execStream, streamCleanser, buff2String(), concatStream, function (err) {
+      console.log('create file', err, response)
+      cb(err, response)
+    })
+  })
 };
 
 /*
@@ -116,7 +158,20 @@ var writeFileStream = function(args, cb)  {
 var unlink = function(args, cb)  {
   var dirPath = args.dirPath;
 
-  fs.unlink(dirPath, cb);
+  var docker = new Docker()
+  var command = ['rm', dirPath]
+  docker.execContainer('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, execStream) {
+    console.log('aaaaa', err, execStream)
+    var streamCleanser = createStreamCleanser()
+    var response
+    var concatStream = miss.concat(function (result) {
+      response = result
+    })
+    miss.pipe(execStream, streamCleanser, buff2String(), concatStream, function (err) {
+      console.log('delete file', err, response)
+      cb(err, response)
+    })
+  })
 };
 
 /*
