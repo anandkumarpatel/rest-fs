@@ -8,6 +8,20 @@ var createStreamCleanser = require('docker-stream-cleanser')
 var error = require('debug')('rest-fs:dockerDriver')
 var miss = require('mississippi')
 
+/**
+ * Convert full path like /:container-id/hellonode/README.md
+ * to object with `{containerId: ':container-id', path: '/hellonode/README.md'}`
+ * @param {String} - full path from which container id and path should be extracted
+ * @return {Object} with `containerId` and `path` props
+ */
+function getContainerId (fullPath) {
+  var splits = fullPath.substr(1).split(/\/(.*)/)
+  return {
+    containerId: splits[0],
+    path: '/' + splits[1]
+  }
+}
+
 function buff2String () {
   return miss.through({ objectMode: true }, function transform (chunk, enc, cb) {
     if (chunk) {
@@ -36,8 +50,9 @@ function execCommand (containerId, command, cb) {
 // returns array of files and dir. trailing slash determines type.
 var list = function(args, cb) {
   var dirPath = args.dirPath
-  var command = ['ls', '-F', dirPath]
-  execCommand('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, resp) {
+  var data = getContainerId(dirPath)
+  var command = [ 'ls', '-F', data.path ]
+  execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -46,11 +61,11 @@ var list = function(args, cb) {
       notFound.code = 'ENOTDIR'
       return cb(notFound)
     }
-    var filesList = resp.split('\n')
-    filesList = files.filter(function (f) {
+    var files = resp.split('\n')
+    files = files.filter(function (f) {
       return f.length > 0
     })
-    cb(null, filesList)
+    cb(null, files)
   })
 };
 
@@ -60,9 +75,9 @@ var list = function(args, cb) {
 var readFile = function(args, cb) {
   var filePath = args.filePath;
   var encoding = args.encoding;
-
-  var command = ['cat', filePath]
-  execCommand('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, resp) {
+  var data = getContainerId(filePath)
+  var command = [ 'cat', filePath ]
+  execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -81,9 +96,9 @@ var readFile = function(args, cb) {
 var mkdir = function(args, cb)  {
   var dirPath = args.dirPath
   var mode = args.mode
-  console.log('mkdir', dirPath, mode)
-  var command = ['/bin/bash', '-c', 'mkdir -m ' + mode + ' -p ' + dirPath]
-  execCommand('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, resp) {
+  var data = getContainerId(filePath)
+  var command = ['/bin/bash', '-c', 'mkdir -m ' + mode + ' -p ' + data.path]
+  execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -97,13 +112,14 @@ var mkdir = function(args, cb)  {
 var rmdir = function(args, cb)  {
   var dirPath = args.dirPath;
   var clobber = args.clobber;
-
+  var data = getContainerId(dirPath)
   var docker = new Docker()
-  var command = ['rm', '-fd', dirPath]
+
+  var command = ['rm', '-fd', data.path]
   if (clobber) {
-    command = ['rm', '-fdr', dirPath]
+    command = ['rm', '-fdr', data.path]
   }
-  execCommand('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, resp) {
+  execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -121,14 +137,12 @@ var rmdir = function(args, cb)  {
 */
 var writeFile = function(args, cb)  {
   var dirPath = args.dirPath
-  var data = args.data
+  var content = args.data
   var options = args.options
-
-  var dirPath = args.dirPath
+  var data = getContainerId(dirPath)
   var mode = args.mode
-  console.log('create file', dirPath, mode)
-  var command = ['/bin/bash', '-c', 'echo "' + data + '" > ' + dirPath]
-  execCommand('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, resp) {
+  var command = ['/bin/bash', '-c', 'echo "' + content + '" > ' + data.path]
+  execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -157,9 +171,9 @@ var writeFileStream = function(args, cb)  {
 */
 var unlink = function(args, cb)  {
   var dirPath = args.dirPath;
-
-  var command = ['rm', dirPath]
-  execCommand('8cab200b9917633cae1453267c0e250ea1141b19c0420748bbc670c45d990a1b', command, function (err, resp) {
+  var data = getContainerId(dirPath)
+  var command = ['rm', data.path]
+  execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
