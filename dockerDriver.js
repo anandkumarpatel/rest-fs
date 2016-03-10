@@ -5,8 +5,13 @@ var path = require('path')
 var isString = require('101/is-string')
 var Docker = require('./docker')
 var createStreamCleanser = require('docker-stream-cleanser')
-var error = require('debug')('rest-fs:dockerDriver')
 var miss = require('mississippi')
+
+function Driver (opts) {
+  this.log = opts.log
+}
+
+module.exports = Driver
 
 /**
  * Convert full path like /:container-id/hellonode/README.md
@@ -31,8 +36,8 @@ function buff2String () {
   })
 }
 
-function execCommand (containerId, command, cb) {
-  console.log('execute', containerId, command)
+Driver.prototype.execCommand =  (containerId, command, cb) {
+  log.info({ containerId: containerId, command: command }, 'Driver.prototype.execCommand')
   var docker = new Docker()
   docker.execContainer(containerId, command, function (err, execStream) {
     var streamCleanser = createStreamCleanser()
@@ -41,18 +46,22 @@ function execCommand (containerId, command, cb) {
       response = result
     })
     miss.pipe(execStream, streamCleanser, buff2String(), concatStream, function (err) {
-      console.log('executed', containerId, command, err, response)
+      if (err) {
+        log.error({ containerId: containerId, command: command, err: err }, 'execCommand error')
+        return cb(err)
+      }
+      log.trace({ containerId: containerId, command: command, response: response }, 'execCommand success')
       cb(err, response)
     })
   })
 }
 
 // returns array of files and dir. trailing slash determines type.
-var list = function(args, cb) {
+Driver.prototype.list = function(args, cb) {
   var dirPath = args.dirPath
   var data = getContainerId(dirPath)
   var command = [ 'ls', '-F', data.path ]
-  execCommand(data.containerId, command, function (err, resp) {
+  this.execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -72,12 +81,12 @@ var list = function(args, cb) {
 /*
   read file from filepath
 */
-var readFile = function(args, cb) {
+Driver.prototype.readFile = function(args, cb) {
   var filePath = args.filePath;
   var encoding = args.encoding;
   var data = getContainerId(filePath)
   var command = [ 'cat', filePath ]
-  execCommand(data.containerId, command, function (err, resp) {
+  this.execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -93,12 +102,12 @@ var readFile = function(args, cb) {
 /*
   mkdir
 */
-var mkdir = function(args, cb)  {
+Driver.prototype.mkdir = function(args, cb)  {
   var dirPath = args.dirPath
   var mode = args.mode
   var data = getContainerId(filePath)
   var command = ['/bin/bash', '-c', 'mkdir -m ' + mode + ' -p ' + data.path]
-  execCommand(data.containerId, command, function (err, resp) {
+  this.execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -109,7 +118,7 @@ var mkdir = function(args, cb)  {
 /*
   delete directory
 */
-var rmdir = function(args, cb)  {
+Driver.prototype.rmdir = function(args, cb)  {
   var dirPath = args.dirPath;
   var clobber = args.clobber;
   var data = getContainerId(dirPath)
@@ -119,7 +128,7 @@ var rmdir = function(args, cb)  {
   if (clobber) {
     command = ['rm', '-fdr', data.path]
   }
-  execCommand(data.containerId, command, function (err, resp) {
+  this.execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -135,14 +144,14 @@ var rmdir = function(args, cb)  {
 /*
   writeFile
 */
-var writeFile = function(args, cb)  {
+Driver.prototype.writeFile = function(args, cb)  {
   var dirPath = args.dirPath
   var content = args.data
   var options = args.options
   var data = getContainerId(dirPath)
   var mode = args.mode
   var command = ['/bin/bash', '-c', 'echo "' + content + '" > ' + data.path]
-  execCommand(data.containerId, command, function (err, resp) {
+  this.execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -153,7 +162,7 @@ var writeFile = function(args, cb)  {
 /*
   write file with stream
 */
-var writeFileStream = function(args, cb)  {
+Driver.prototype.writeFileStream = function(args, cb)  {
   var dirPath = args.dirPath;
   var stream = args.stream;
   var options = args.options;
@@ -169,11 +178,11 @@ var writeFileStream = function(args, cb)  {
 /*
   delete file
 */
-var unlink = function(args, cb)  {
+Driver.prototype.unlink = function(args, cb)  {
   var dirPath = args.dirPath;
   var data = getContainerId(dirPath)
   var command = ['rm', data.path]
-  execCommand(data.containerId, command, function (err, resp) {
+  this.execCommand(data.containerId, command, function (err, resp) {
     if (err) {
       return cb(err)
     }
@@ -194,7 +203,7 @@ var unlink = function(args, cb)  {
 /*
   move file
 */
-var move = function (args, cb) {
+Driver.prototype.move = function (args, cb) {
   var oldPath = args.dirPath;
   var newPath = args.newPath;
   var opts = args.options;
@@ -232,7 +241,7 @@ var move = function (args, cb) {
 /*
   stat a file
 */
-var stat = function (args, cb) {
+Driver.prototype.stat = function (args, cb) {
   var path = args.filePath;
 
   fs.stat(path, function(err, stats) {
@@ -240,13 +249,3 @@ var stat = function (args, cb) {
     cb(null, stats);
   });
 };
-
-module.exports.list = list;
-module.exports.readFile = readFile;
-module.exports.mkdir = mkdir;
-module.exports.rmdir = rmdir;
-module.exports.writeFile = writeFile;
-module.exports.unlink = unlink;
-module.exports.move = move;
-module.exports.writeFileStream = writeFileStream;
-module.exports.stat = stat;

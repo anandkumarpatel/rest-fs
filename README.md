@@ -1,8 +1,6 @@
 rest-fs
 =====
 
-curl -XPOST http://localhost:3000/hellonode/test7/
-
 restful interface to a filesystem
 
 usage

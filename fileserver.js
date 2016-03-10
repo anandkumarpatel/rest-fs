@@ -1,19 +1,30 @@
 // fileserver
 var bodyParser = require('body-parser');
-var fileDriver = require('./dockerDriver.js');
 var url = require('url');
 var mime = require('mime');
 var path = require('path');
 var mw = require('dat-middleware');
 var flow = require('middleware-flow');
 var morgan = require('morgan');
-var error = require('debug')('rest-fs:fileserver');
+var logger = require('./logger')
 
-var fileserver = function(app) {
+var log = logger.child({ module: 'rest-fs:server' })
+// TODO change default to fsDriver
+var Driver = require('./dockerDriver.js')
+
+var fileDriver
+
+var fileserver = function(app, opts) {
   if (!app) {
     throw new Error('express app required');
   }
-
+  if (opts && opts.log) {
+    log = this.opts.log
+  }
+  if (opts &&  opts.driver === 'docker') {
+    Driver = require('./dockerDriver.js')
+  }
+  fileDriver = new Driver(log)
   app.set('etag', 'strong');
   app.use(require('express-domain-middleware'));
   app.use(bodyParser.json());
@@ -25,12 +36,12 @@ var fileserver = function(app) {
   }));
   app.get(/^\/(.+\/)?$/, getDir);
   app.get(/^\/.+[^\/]$/, getFile);
-  app.post("/*", postFileOrDir);
-  app.put("/*", putFileOrDir);
+  app.post('/*', postFileOrDir);
+  app.put('/*', putFileOrDir);
   app.delete(/^\/.+\/$/, delDir);
   app.delete(/^\/.+[^\/]$/, delFile);
   app.use(function (err, req, res, next)  {
-    error('uncaught error', err.stack);
+    log.error({ stack: err.stack }, 'uncaught error');
     var outErr = {
       message: err.message,
       stack: err.stack
@@ -147,17 +158,14 @@ var getFile = function (req, res, next) {
   }
 */
 var postFileOrDir = function (req, res, next) {
-  console.log('postFileOrDir1')
   var dirPath =  decodeURI(url.parse(req.url).pathname);
   var isDir = dirPath.substr(-1) === '/';
   var options = {};
   var isJson = false;
   var driverOpts = req.body.driverOpts;
-  console.log('postFileOrDir2', dirPath, isDir)
   if (typeof req.headers['content-type'] === 'string') {
     isJson = ~req.headers['content-type'].indexOf('application/json') === -1 ? true : false;
   }
-  console.log('postFileOrDir3', dirPath, isJson)
   // move/rename if newPath exists
   if (req.body.newPath) {
     options.clobber = req.body.clobber || false;
@@ -175,7 +183,6 @@ var postFileOrDir = function (req, res, next) {
   }
 
   if (isDir) {
-    console.log('postFileOrDir2', dirPath, isDir)
     var mode = req.body.mode || 511;
     return fileDriver.mkdir({
       dirPath: dirPath,
@@ -197,7 +204,6 @@ var postFileOrDir = function (req, res, next) {
       driverOpts: driverOpts
     }, sendCode(201, req, res, next, formatOutData(req, dirPath)));
   }
-  console.log('writing file')
   options.encoding = req.body.encoding  || 'utf8';
   options.mode = req.body.mode || 438;
   var data = req.body.content || '';
@@ -334,7 +340,7 @@ var formatOutData = function (req, filepath) {
 var sendCode = function(code, req, res, next, out) {
   return function (err) {
     if (err) {
-      error('ERROR', req.url, err);
+      log.error({ err: err, url: req.url }, 'rest-fs error')
       code = 500;
       out = {
         errno: err.errno,

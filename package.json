@@ -27,6 +27,7 @@
   "dependencies": {
     "101": "^1.4.0",
     "body-parser": "1.5.2",
+    "bunyan": "^1.7.1",
     "dat-middleware": "^1.8.1",
     "debug": "^1.0.4",
     "docker-stream-cleanser": "^0.3.0",

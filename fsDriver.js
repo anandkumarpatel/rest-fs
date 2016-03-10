@@ -6,9 +6,14 @@ var mv = require('mv');
 var rm = require('rimraf');
 var error = require('debug')('rest-fs:fsDriver');
 
+function Driver (opts) {
+  this.log = opts.log
+}
+
+module.exports = Driver
 
 // returns array of files and dir. trailing slash determines type.
-var list = function(args, cb) {
+Driver.prototype.list = function(args, cb) {
   var dirPath = args.dirPath;
   var filesList = [];
   var cnt = 0;
@@ -19,7 +24,7 @@ var list = function(args, cb) {
       return cb(null, []);
     }
     var formatFileList = function(index) {
-      return function (err, stat) {
+        return function (err, stat) {
         // here we do something special. if stat failes we know that there is something here
         // but we might not have permissons. show it as a file.
         if (err) {
@@ -46,7 +51,7 @@ var list = function(args, cb) {
 /*
   read file from filepath
 */
-var readFile = function(args, cb) {
+Driver.prototype.File = function(args, cb) {
   var filePath = args.filePath;
   var encoding = args.encoding;
 
@@ -56,7 +61,7 @@ var readFile = function(args, cb) {
 /*
   mkdir
 */
-var mkdir = function(args, cb)  {
+Driver.prototype.kdir = function(args, cb)  {
   var dirPath = args.dirPath;
   var mode = args.mode;
 
@@ -66,7 +71,7 @@ var mkdir = function(args, cb)  {
 /*
   delete directory
 */
-var rmdir = function(args, cb)  {
+Driver.prototype.mdir = function(args, cb)  {
   var dirPath = args.dirPath;
   var clobber = args.clobber;
 
@@ -79,7 +84,7 @@ var rmdir = function(args, cb)  {
 /*
   writeFile
 */
-var writeFile = function(args, cb)  {
+Driver.prototype.File = function(args, cb)  {
   var dirPath = args.dirPath;
   var data = args.data;
   var options = args.options;
@@ -90,7 +95,7 @@ var writeFile = function(args, cb)  {
 /*
   write file with stream
 */
-var writeFileStream = function(args, cb)  {
+Driver.prototype.ream = function(args, cb)  {
   var dirPath = args.dirPath;
   var stream = args.stream;
   var options = args.options;
@@ -106,7 +111,7 @@ var writeFileStream = function(args, cb)  {
 /*
   delete file
 */
-var unlink = function(args, cb)  {
+Driver.prototype.link = function(args, cb)  {
   var dirPath = args.dirPath;
 
   fs.unlink(dirPath, cb);
@@ -115,7 +120,7 @@ var unlink = function(args, cb)  {
 /*
   move file
 */
-var move = function (args, cb) {
+Driver.prototype.move = function (args, cb) {
   var oldPath = args.dirPath;
   var newPath = args.newPath;
   var opts = args.options;
@@ -153,7 +158,7 @@ var move = function (args, cb) {
 /*
   stat a file
 */
-var stat = function (args, cb) {
+Driver.prototype.stat = function (args, cb) {
   var path = args.filePath;
 
   fs.stat(path, function(err, stats) {
@@ -161,13 +166,3 @@ var stat = function (args, cb) {
     cb(null, stats);
   });
 };
-
-module.exports.list = list;
-module.exports.readFile = readFile;
-module.exports.mkdir = mkdir;
-module.exports.rmdir = rmdir;
-module.exports.writeFile = writeFile;
-module.exports.unlink = unlink;
-module.exports.move = move;
-module.exports.writeFileStream = writeFileStream;
-module.exports.stat = stat;
