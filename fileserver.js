@@ -3,17 +3,14 @@ var bodyParser = require('body-parser');
 var fileDriver = require('./fsDriver.js');
 var url = require('url');
 var mime = require('mime');
-var path = require('path');
-var mw = require('dat-middleware');
-var flow = require('middleware-flow');
 var morgan = require('morgan');
 var error = require('debug')('rest-fs:fileserver');
 
-var fileserver = function(app) {
+var fileserver = function(app, opts) {
   if (!app) {
     throw new Error('express app required');
   }
-
+  fileDriver = fileDriver(opts);
   app.set('etag', 'strong');
   app.use(require('express-domain-middleware'));
   app.use(bodyParser.json());
