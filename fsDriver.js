@@ -1,34 +1,32 @@
 // fsDriver
 // use fs engine to server files
-var fs = require('fs');
-var findit = require('findit');
 var path = require('path');
-var mv = require('mv');
-var rm = require('rimraf');
 var error = require('debug')('rest-fs:fsDriver');
 
+module.exports = function({fs = require('fs'), basePath = ''} = {}) {
 // returns array of files and dir. trailing slash determines type.
 var listAll = function(args, cb) {
-  var dirPath = args.dirPath;
-  var finder = findit(dirPath);
-  var files = [];
+  var dirPath = basePath + args.dirPath;
+  const result = [];
+  const files = [dirPath];
+  do {
+    const filepath = files.pop();
+    const stat = fs.lstatSync(filepath);
+    if (stat.isDirectory()) {
+      fs
+          .readdirSync(filepath)
+          .forEach(f => files.push(path.join(filepath, f)));
+    } else if (stat.isFile()) {
+      result.push(path.relative(reqDir, filepath));
+    }
+  } while (files.length !== 0);
 
-  finder.on('directory', function (dir, stat, stop) {
-    files.push(path.join(dir, '/'));
-  });
-
-  finder.on('file', function (file, stat) {
-    files.push(file);
-  });
-
-  finder.on('end', function () {
-    cb(null, files);
-  });
+  cb(null, result);
 };
 
 // returns array of files and dir. trailing slash determines type.
 var list = function(args, cb) {
-  var dirPath = args.dirPath;
+  var dirPath = basePath + args.dirPath;
   var filesList = [];
   var cnt = 0;
   fs.readdir(dirPath, function (err, files) {
@@ -66,7 +64,7 @@ var list = function(args, cb) {
   read file from filepath
 */
 var readFile = function(args, cb) {
-  var filePath = args.filePath;
+  var filePath = basePath + args.filePath;
   var encoding = args.encoding;
 
   fs.readFile(filePath, encoding, cb);
@@ -76,7 +74,7 @@ var readFile = function(args, cb) {
   mkdir
 */
 var mkdir = function(args, cb)  {
-  var dirPath = args.dirPath;
+  var dirPath = basePath + args.dirPath;
   var mode = args.mode;
 
   fs.mkdir(dirPath, mode, cb);
@@ -86,11 +84,11 @@ var mkdir = function(args, cb)  {
   delete directory
 */
 var rmdir = function(args, cb)  {
-  var dirPath = args.dirPath;
+  var dirPath = basePath + args.dirPath;
   var clobber = args.clobber;
 
   if (clobber) {
-    return rm(dirPath, cb);
+    return fs.unlink(dirPath, cb);
   }
   return fs.rmdir(dirPath, cb);
 };
@@ -99,7 +97,7 @@ var rmdir = function(args, cb)  {
   writeFile
 */
 var writeFile = function(args, cb)  {
-  var dirPath = args.dirPath;
+  var dirPath = basePath + args.dirPath;
   var data = args.data;
   var options = args.options;
 
@@ -110,7 +108,7 @@ var writeFile = function(args, cb)  {
   write file with stream
 */
 var writeFileStream = function(args, cb)  {
-  var dirPath = args.dirPath;
+  var dirPath = basePath + args.dirPath;
   var stream = args.stream;
   var options = args.options;
   var file = fs.createWriteStream(dirPath, options);
@@ -126,7 +124,7 @@ var writeFileStream = function(args, cb)  {
   delete file
 */
 var unlink = function(args, cb)  {
-  var dirPath = args.dirPath;
+  var dirPath = basePath + args.dirPath;
 
   fs.unlink(dirPath, cb);
 };
@@ -135,8 +133,8 @@ var unlink = function(args, cb)  {
   move file
 */
 var move = function (args, cb) {
-  var oldPath = args.dirPath;
-  var newPath = args.newPath;
+  var oldPath = basePath + args.dirPath;
+  var newPath = basePath + args.newPath;
   var opts = args.options;
   // have to remove trailing slaches
   if(oldPath.substr(-1) == '/') {
@@ -160,12 +158,12 @@ var move = function (args, cb) {
 
     if (opts.clobber) {
       // also work around bug for clobber in dir
-      return rm(newPath, function(err) {
+      return fs.unlink(newPath, function(err) {
         if (err) { return cb(err); }
-        mv(oldPath, newPath, opts, cb);
+        fs.rename(oldPath, newPath, cb);
       });
     }
-    return mv(oldPath, newPath, opts, cb);
+    return fs.rename(oldPath, newPath, cb);
   });
 };
 
@@ -180,14 +178,5 @@ var stat = function (args, cb) {
     cb(null, stats);
   });
 };
-
-module.exports.listAll = listAll;
-module.exports.list = list;
-module.exports.readFile = readFile;
-module.exports.mkdir = mkdir;
-module.exports.rmdir = rmdir;
-module.exports.writeFile = writeFile;
-module.exports.unlink = unlink;
-module.exports.move = move;
-module.exports.writeFileStream = writeFileStream;
-module.exports.stat = stat;
+  return {listAll,list,readFile,mkdir,rmdir,writeFile,unlink,move,writeFileStream,stat};
+}
